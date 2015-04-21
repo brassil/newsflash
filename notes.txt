@@ -1,0 +1,3 @@
+- note the fact that looking exclusively at geo-enabled tweets will introduce a bias.
+
+
