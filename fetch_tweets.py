@@ -7,11 +7,11 @@ import csv
 import re
 
 # See Assignment 1 instructions for how to get these credentials
-access_token_key = "437912738-BIXQU5IwKRPz02pwMQt8aAEQRNJAPRzO1bXZGEHF"
-access_token_secret = "1OFsZSI9aEjbtZNu2ztkxSXWFPTF3SpUvWiPp65XpGTgC"
+access_token_key = "602261126-aEYMLujye1c9wBgWma3iEFCXLLsVHjYPyKp5oxxM"
+access_token_secret = "5q1T16Y2cnqj3MBp9T5t0nHsw9L8mirgUcbLBwYjauHN7"
 
-consumer_key = "SyKA1Fy8dtZTLpjDv0baBmDAl"
-consumer_secret = "cE1lSybtjPW3UzvMnEJ2xC8uPizCayGjQK73P8rtFiCyGM4X1M"
+consumer_key = "vuTIHbQAQLeMKtq4XlEKAeik9"
+consumer_secret = "rLDfV62htmmn02uNcNhxBZhQiMlGYpp4lBQyT569j1vmQhnVTr"
 
 _debug = 0
 
