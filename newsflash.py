@@ -8,6 +8,7 @@ import csv
 from collections import defaultdict as ddict
 from datetime import datetime
 import time
+from tokenizer import Tokenizer
 
 '''
 does things
@@ -36,6 +37,14 @@ stopwords = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
        'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
        'just', 'don', 'should', 'now']
 
+stopwords += ["i'm"]
+
+
+# bounding box for continental US
+SW = (24.9493, -125.0011)
+NE = (49.5904, -66.9326)
+
+
 
 class Newsflash:
 	def __init__(self):
@@ -48,59 +57,91 @@ class Newsflash:
 		self.tweets = {}
 
 nf = Newsflash()
+tokenizer = Tokenizer()
 
 
-def reformat_word(word):
+def seconds(d):
 	'''
-	might replace this w the tokenizer from classification
+	e.g. input d = Wed Apr 22 13:54:11 +0000 2015
+	return Unix time seconds
 	'''
+	d = d.split()
+	t = (int(x) for x in d[3].split(':'))
 
-	word = word.lower() # convert to lowercase
-	if word=='rt': return ''
+	# datetime obj: year, month num, day; asterisk unpacks tuple
+	dt = datetime(int(d[5]), months[d[1]], int(d[2]), *t)
 
-	# ignore html escapes and urls
-	if word.startswith('&') and word.endswith(';'): return ''
-	if word.startswith('http'): return ''
-
-
-	word = word.replace('—','-').replace('–','-') # normalize dashes
-	word = word.replace('…','...') # normalize ellipsis
-	word = ''.join(x for x in word if x not in punct) # remove punct
-	if word in stopwords: return ''
-
-	return word
+	return time.mktime(dt.timetuple())
 
 
 
-def parse_tweet(tweet):
+def parse_tweet(t):
 	'''
 	takes in the tweet as a string. I'm thinking that initializing
 	a new CSV reader for each tweet is prob inefficient but idk we'll see
-
-	NOTE that I'm not checking whether a word is in 'stopwords' rn because
-	I think that will be too time-intensive. We'll just throw them out later.
-	I think this the best way to deal with it but not totally sure.
 	'''
-	tid = tweet[0]
+	tid = t[0]
 
-	words = []
-	for w in (reformat_word(x) for x in tweet[7].split()):
-		if w != '':
-			words.append(w) # add w to list of words in this tweet
-			nf.terms[w].append(tid) # add tweet ID to inverse index for w
+	words = tokenizer.tokenize(t[7])
+	for word in words: nf.terms[word].append(tid) # add to inverse index
 
+	
+	# loc = np.array((t[5],t[6]), dtype=float)
+	loc = (float(t[5]), float(t[6]))
+	nf.tweets[tid] = [seconds(t[1]), loc, words]
 
-	# s is UTC seconds
-	d = tweet[1].split()
-	t = d[3].split(':')
-	s = time.mktime(datetime(int(d[5]), months[d[1]], int(d[2]), int(t[0]), int(t[1]), int(t[2])).timetuple())
+	return tid # maybe shouldn't return anything but for now it's necessary
 
 
-	# add tweet to tweets dict
-	nf.tweets[tid] = [s, (float(tweet[5]),float(tweet[6])), words]
 
-	return tid # maybe shouldn't return anything 
+def trending_location(points):
+	'''
+	ugh it's not gonna work bc what if a split happens through the middle
+	of the cluster? well, at least if we do the entire united states,
+	it's less likely to happen? nah it still is bad
+	'''
+	# format = [[latmin, latmax], [lngmin, lngmax]]
+	box = [[SW[0], NE[0]], [SW[1], NE[1]]]
+	i = 1 # split on longitude first (0 is lat)
 
+	# only run while the bounding box is > 1 square mile
+	while (box[0][1]-box[0][0])*(box[1][1]-box[1][0]) > .0001:
+		# print the bounding box
+		# print [(box[0][0],box[1][0]),(box[0][1],box[1][1])]
+
+		mid = box[i][0] + (box[i][1] - box[i][0]) / 2 
+
+		# less than vs. greater than the mid point
+		l = []
+		g = []
+
+		for x in points:
+			if x[i] < mid:
+				l.append(x)
+			else:
+				g.append(x)
+
+		# now figure out which side has more and if it's a lot more
+		# the 2* thing is just a basic idea, prob not what we should
+		# use in the end. 
+		if len(g) > 2*len(l):
+			box[i][0] = mid
+			i = (1 if i==0 else 0)
+			points = g
+
+		elif len(l) > 2*len(g):
+			box[i][1] = mid
+			i = (1 if i==0 else 0)
+			points = l
+
+		else:
+			# it's not a significant change so end it
+			break
+
+	# you get here either if the bounding box has become too small,
+	# or if we split the box and there was no significant change
+	# in size between one and the other side
+	return box, len(points)
 
 
 def compute_rankings(end, window):
@@ -115,18 +156,25 @@ def compute_rankings(end, window):
 		for tid in tweets:
 			if end - nf.tweets[tid][0] < seconds_per_day: today_tweets += 1
 
-		dfreq = (today_tweets) / (freq/window)
+		dfreq = today_tweets / (freq/window)
 
 		# now calculate the geography thing
+		all_points = [nf.tweets[tid][1] for tid in tweets]
+		box, num_points = trending_location(all_points)
+
+		'''newyork
+		SW corner: 40.63,-74.12
+		NE corner: 40.94,-73.68
+		'''
+		final_box_area = (box[0][1]-box[0][0]) * (box[1][1]-box[1][0])*3600
+		points_ratio = num_points / float(len(all_points))
 
 
+		nf.ranks[term] = (freq, dfreq, final_box_area, points_ratio)
 
-		# finally, update the ranking. for now, without geography,
-		# I'm just going to do weight the freq by dfreq (i.e. weight
-		# by how much it's being talked about in the last day)
-		nf.ranks[term] = (freq,dfreq)
 
-	for term in list(reversed(sorted(nf.ranks.items(), key=lambda x: x[1][0]*x[1][1])))[:20]:
+	sorter = lambda x: x[1][0]*(x[1][1]**2)*(1+x[1][3])
+	for term in list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]:
 		print term
 
 
@@ -155,14 +203,6 @@ def main(tweet_data_file):
 	window_in_days = (end-start)/3600/24
 
 	compute_rankings(end, window_in_days)
-
-
-
-
-
-
-
-
 
 
 

@@ -31,3 +31,8 @@ need to have a sort of "significance" metric for a given term. It must be weight
 - remember we haven't done anything about retweets yet, and that could be a useful metric.  
 	+ number of RTs should increase the weight of the tweet
 	+ can probably detect rate of increase of RTs also
+
+- important, should deal with AT_USER and URL better, they are p relevant. but should also not be classified the same as other terms? should maybe use the additional data I added (links and such) in the tweets
+
+
+__problem with the geography clustering thing we do:__ what if the big cluster is right in the middle? then it's not going to come up as significant
