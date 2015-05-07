@@ -86,6 +86,7 @@ def fetch_from_manhattan():
 		tweets_info = parse_tweet(line)
 		if tweets_info is not None:
 			print tweets_info
+			
 			for client in clients:
 				client.write_message(json.dumps({'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7]}))
 

@@ -19,6 +19,10 @@ def index():
 def map():
 	return render_template('map.html',)
 
+@app.route("/bound")
+def bound():
+	return render_template('bound.html',)
+
 
 
 if __name__ == "__main__":
