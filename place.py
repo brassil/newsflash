@@ -6,6 +6,16 @@ NE = (49.5904, -66.9326)
 
 R = 3959 # radius of earth, in miles
 
+
+def get_corners(box):
+	'''
+	takes in a box, in the format used by trending_location,
+	and returns the 4 corners as a list (each corner is a duple)
+	in the order SW, NW, NE, SE
+	'''
+	return [(box[0][0],box[1][0]),(box[0][1],box[1][0]),(box[0][1],box[1][1]),(box[0][0],box[1][1])]
+
+
 def trending_location(points):
 	'''
 	ugh it's not gonna work bc what if a split happens through the middle
@@ -16,10 +26,16 @@ def trending_location(points):
 	box = [[SW[0], NE[0]], [SW[1], NE[1]]]
 	i = 1 # split on longitude first (0 is lat)
 
+
+	corners = []
+
+
 	# only run while the bounding box is > 1 square mile
 	while (box[0][1]-box[0][0])*(box[1][1]-box[1][0]) > .0001:
 		# print the bounding box
 		# print [(box[0][0],box[1][0]),(box[0][1],box[1][1])]
+		corners.append(get_corners(box))
+
 
 		mid = box[i][0] + (box[i][1] - box[i][0]) / 2 
 
@@ -53,7 +69,7 @@ def trending_location(points):
 	# you get here either if the bounding box has become too small,
 	# or if we split the box and there was no significant change
 	# in size between one and the other side
-	return box, get_dist(box), len(points)
+	return box, get_dist(box), len(points), corners
 
 
 
