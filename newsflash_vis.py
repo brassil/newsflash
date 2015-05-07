@@ -6,44 +6,21 @@ import os
 import numpy as np
 import csv
 from collections import defaultdict as ddict
-from datetime import datetime
-import time
+
 from tokenizer import Tokenizer
+from seconds import seconds
+from place import trending_location
 
 '''
 does things
 
 created 2015-05-06 02:20h
 '''
-# punct = {'?','!','.',',','"','...',':','(',')'}
-months = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
+
+
+
+
 seconds_per_day = 24*60*60
-
-punct = ''.join(chr(x) for x in range(33,48)+range(58,65)+range(91,97)+range(123,127))
-stopwords = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
-       'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his',
-       'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself',
-       'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which',
-       'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are',
-       'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
-       'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and',
-       'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at',
-       'by', 'for', 'with', 'about', 'against', 'between', 'into',
-       'through', 'during', 'before', 'after', 'above', 'below', 'to',
-       'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
-       'again', 'further', 'then', 'once', 'here', 'there', 'when',
-       'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more',
-       'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own',
-       'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
-       'just', 'don', 'should', 'now']
-
-stopwords += ["i'm"]
-
-
-# bounding box for continental US
-SW = (24.9493, -125.0011)
-NE = (49.5904, -66.9326)
-
 
 
 class Newsflash:
@@ -60,18 +37,6 @@ nf = Newsflash()
 tokenizer = Tokenizer()
 
 
-def seconds(d):
-	'''
-	e.g. input d = Wed Apr 22 13:54:11 +0000 2015
-	return Unix time seconds
-	'''
-	d = d.split()
-	t = (int(x) for x in d[3].split(':'))
-
-	# datetime obj: year, month num, day; asterisk unpacks tuple
-	dt = datetime(int(d[5]), months[d[1]], int(d[2]), *t)
-
-	return time.mktime(dt.timetuple())
 
 
 
@@ -94,56 +59,6 @@ def parse_tweet(t):
 
 
 
-def trending_location(points):
-	'''
-	ugh it's not gonna work bc what if a split happens through the middle
-	of the cluster? well, at least if we do the entire united states,
-	it's less likely to happen? nah it still is bad
-	'''
-	# format = [[latmin, latmax], [lngmin, lngmax]]
-	box = [[SW[0], NE[0]], [SW[1], NE[1]]]
-	i = 1 # split on longitude first (0 is lat)
-
-	# only run while the bounding box is > 1 square mile
-	while (box[0][1]-box[0][0])*(box[1][1]-box[1][0]) > .0001:
-		# print the bounding box
-		print [(box[0][0],box[1][0]),(box[0][1],box[1][1])]
-
-		mid = box[i][0] + (box[i][1] - box[i][0]) / 2 
-
-		# less than vs. greater than the mid point
-		l = []
-		g = []
-
-		for x in points:
-			if x[i] < mid:
-				l.append(x)
-			else:
-				g.append(x)
-
-		# now figure out which side has more and if it's a lot more
-		# the 2* thing is just a basic idea, prob not what we should
-		# use in the end. 
-		if len(g) > 2*len(l):
-			box[i][0] = mid
-			i = (1 if i==0 else 0)
-			points = g
-
-		elif len(l) > 2*len(g):
-			box[i][1] = mid
-			i = (1 if i==0 else 0)
-			points = l
-
-		else:
-			# it's not a significant change so end it
-			break
-
-	# you get here either if the bounding box has become too small,
-	# or if we split the box and there was no significant change
-	# in size between one and the other side
-	return box, len(points)
-
-
 def compute_rankings(end, window):
 	print 'end %f window %f' % (end, window)
 
@@ -159,37 +74,17 @@ def compute_rankings(end, window):
 		dfreq = today_tweets / (freq/window)
 
 		# now calculate the geography thing
-		# all_points = [nf.tweets[tid][1] for tid in tweets]
-		# box, num_points = trending_location(all_points)
-
-		'''newyork
-		SW corner: 40.63,-74.12
-		NE corner: 40.94,-73.68
-		'''
-		# final_box_area = (box[0][1]-box[0][0]) * (box[1][1]-box[1][0])*3600
-		# points_ratio = num_points / float(len(all_points))
-
-
-		# nf.ranks[term] = (freq, dfreq, final_box_area, points_ratio)
-		nf.ranks[term] = (freq,dfreq)
-
-
-	sorter = lambda x: x[1][0]*(x[1][1]**2) #*(1+x[1][3])
-	for term in list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]:
 		all_points = [nf.tweets[tid][1] for tid in tweets]
-
-		print term
-		print "---finding bounding box---"
-		box, num_points = trending_location(all_points)
-		final_box_area = (box[0][1]-box[0][0]) * (box[1][1]-box[1][0])*3600
+		box, size, num_points = trending_location(all_points)
 		points_ratio = num_points / float(len(all_points))
-		print
+
+		# size is the distance between two corners of the box
+		# --- remove size and points ratio --- nf.ranks[term] = (freq, dfreq, size, points_ratio)
+		nf.ranks[term] = (freq, dfreq)
 
 
-
-
-
-
+	sorter = lambda x: x[1][0]*(x[1][1]**2) # *(1+x[1][3])
+	return list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]
 
 
 
@@ -210,23 +105,13 @@ def main(tweet_data_file):
 	end = nf.tweets[last_tweet][0]
 	window_in_days = (end-start)/3600/24
 
-	compute_rankings(end, window_in_days)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	top_20 = compute_rankings(end, window_in_days)
+	for term in top_20:
+		all_points = [nf.tweets[tid][1] for tid in tweets]
+		box, size, num_points, all_boxes = trending_location(all_points)
+			for box in all_boxes:
+				#do shit here with the boxes (like stream to vis)
+		points_ratio = num_points / float(len(all_points))
 
 
 
