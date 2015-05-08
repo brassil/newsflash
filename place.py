@@ -27,6 +27,7 @@ def trending_location(points):
 	i = 1 # split on longitude first (0 is lat)
 
 
+	# get rid of this eventually, we only need it for intermediate bounding box visualization
 	corners = []
 
 

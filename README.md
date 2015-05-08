@@ -6,6 +6,7 @@
 
 - tweets.txt has approx 40 tweets per minute
 
+- don't forget that retweeted tweets might appear multiple times in the streaming output csv and therefore other times downstream. 
 
 
 

@@ -1,3 +1,6 @@
+#!/usr/local/bin/python
+# -*- coding: utf-8 -*-
+
 import argparse
 import oauth2 as oauth
 import urllib2 as urllib
@@ -5,6 +8,11 @@ import json
 import sys
 import csv
 import re
+from os import path
+import pickle
+
+from newsflash import Newsflash, parse_tweet, compute_rankings
+from tokenizer import Tokenizer
 
 # See Assignment 1 instructions for how to get these credentials
 access_token_key = "602261126-aEYMLujye1c9wBgWma3iEFCXLLsVHjYPyKp5oxxM"
@@ -60,44 +68,9 @@ def fetch_samples():
     for line in response:
         print line.strip()
 
-def fetch_from_manhattan(out_file):
-    '''
-    main documentation here:
-    https://dev.twitter.com/streaming/reference/post/statuses/filter
-    
-    chose bounding box by picking points on google maps and then 
-    rounding them out
-
-    SW corner: 40.63,-74.12
-    NE corner: 40.94,-73.68
-    '''
-
-    url = 'https://stream.twitter.com/1.1/statuses/filter.json'
-    add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
-
-    response = twitterreq((url+add), 'GET', [])
-
-    with open(out_file,'w') as f:
-        # for line in response:
-        #     f.write(line)
-
-        w = csv.writer(f)
-        w.writerow(['tweet_id','date','user_id','followers','place','lat',
-            'lng','text','source','hashtags','urls','retweet_id'])
-
-        for line in response:
-            tweets_info = parse_tweet(line)
-            if tweets_info is not None:
-                w.writerow(tweets_info[0])
-                if tweets_info[1] is not None: w.writerow(tweets_info[1])
 
 
-
-
-
-
-
-def parse_tweet(t):
+def parse_streaming_tweet(t):
     # don't freak out if JSON conversion fails
     try: t = json.loads(t)
     except: return None
@@ -132,13 +105,76 @@ def parse_tweet(t):
     if 'retweeted_status' in t.keys():
         # this tweet is a retweet
         retweet_id = t['retweeted_status']['id_str'].encode('utf-8')
-        original = parse_tweet(t['retweeted_status'])
+        original = parse_streaming_tweet(t['retweeted_status'])
 
     return [tweet_id,date,user_id,followers,place,lat,lng,text,source,hashtags,urls,retweet_id], original
 
 
 
+def fetch_from_manhattan(out_file):
+    '''
+    main documentation here:
+    https://dev.twitter.com/streaming/reference/post/statuses/filter
+    
+    chose bounding box by picking points on google maps and then 
+    rounding them out
 
+    SW corner: 40.63,-74.12
+    NE corner: 40.94,-73.68
+    '''
+    url = 'https://stream.twitter.com/1.1/statuses/filter.json'
+    add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
+    response = twitterreq((url+add), 'GET', [])
+
+    with open(out_file,'w') as f:
+        w = csv.writer(f)
+        w.writerow(['tweet_id','date','user_id','followers','place','lat',
+            'lng','text','source','hashtags','urls','retweet_id'])
+
+        for line in response:
+            tweets_info = parse_streaming_tweet(line)
+            if tweets_info is not None:
+                w.writerow(tweets_info[0])
+                if tweets_info[1] is not None: w.writerow(tweets_info[1])
+
+
+def run_newsflash(nf_pickle_file):
+    '''
+    modified version of fetch_from_manhattan; instead of writing to a csv file
+    it puts the tweets into the newsflash object and calculates rankings
+    '''
+    nf = pickle.load(file(nf_pickle_file))
+    tokenizer = Tokenizer()
+
+    print 'Newsflash pickle object successfully loaded'
+
+    url = 'https://stream.twitter.com/1.1/statuses/filter.json'
+    add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
+    response = twitterreq((url+add), 'GET', [])
+
+    print 'API call made'
+
+    update = 0
+
+    for line in response:
+        tweets_info = parse_streaming_tweet(line)
+        if tweets_info is not None:
+            update += 1
+            sys.stdout.write(' Parsing tweet %d    \r' % (update))
+            sys.stdout.flush()
+
+            nf.last_tweet = parse_tweet(nf, tokenizer, tweets_info[0])
+            if tweets_info[1] is not None:
+                # if it's a retweet, add the original tweet, but DON'T
+                # upddate "last tweet" bc it's obv gonna be older
+                parse_tweet(nf, tokenizer, tweets_info[1])
+
+        # update every 50 tweets
+        if update == 50:
+            sys.stdout.write('Recomputing rankings\n')
+            update = 0
+            compute_rankings(nf)
+            sys.stdout.write('\n')
 
 
 
@@ -147,7 +183,22 @@ def parse_tweet(t):
 
 
 if __name__ == '__main__':
-    fetch_from_manhattan(sys.argv[1])    
+    parser = argparse.ArgumentParser()
+    option = parser.add_mutually_exclusive_group(required=True)
+    option.add_argument('-s', '--stream_to_file', help='Specify output CSV '
+        'file to which tweets should be streamed')
+    option.add_argument('-p', '--newsflash_pickle', help='Specify newsflash '
+        'pickle file to import and continue populating')
+    opts = parser.parse_args()
+
+    if opts.stream_to_file:
+        fetch_from_manhattan(opts.stream_to_file)
+
+    else:
+        p = opts.newsflash_pickle
+        if not path.isfile(p):
+            sys.exit('ERROR - could not find pickle file at %s.' % p)
+        run_newsflash(p)
 
 
 
