@@ -80,24 +80,25 @@ def compute_rankings(nf):
 
 		dfreq = today_tweets / (freq/window)
 
-		# now calculate the geography thing
-		all_points = [nf.tweets[tid][1] for tid in tweets]
-		box, size, num_points, _ = trending_location(all_points) # don't need intermediate bounding box rn
-		points_ratio = num_points / float(len(all_points))
-
 		# size is the distance between two corners of the box
-		nf.ranks[term] = (freq, dfreq, size, points_ratio)
+		nf.ranks[term] = (freq, dfreq)
 
 
 	sorter = lambda x: x[1][0]*(x[1][1]**2) # *(1+x[1][3])
-	for term in list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]:
-		print term
+	top_20 = list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]
+	top_corners = []
+	for term in top_20:
+
+		# now calculate the geography thing
+		all_points = [nf.tweets[tid][1] for tid in tweets]
+		box, size, num_points, corners = trending_location(all_points) # don't need intermediate bounding box rn
+		points_ratio = num_points / float(len(all_points))
+		top_corners.append(corners)
+		print str(term)+'\t%f' % size
+	return (top_20, top_corners)
 
 
-
-
-
-def main(tweet_data_file, pickle_file=None):
+def get_top_terms_boxes(tweet_data_file, pickle_file=None):
 	nf = Newsflash()
 	tokenizer = Tokenizer()
 
@@ -111,17 +112,16 @@ def main(tweet_data_file, pickle_file=None):
 		last_tweet = None
 		for row in r: nf.last_tweet = parse_tweet(nf, tokenizer, row)
 
-	compute_rankings(nf)
+	top_20, top_corners = compute_rankings(nf)
 
 	if pickle_file:
 		pickle.dump(nf, file(pickle_file, 'w'))
 
+	return (top_20, top_corners)
 
 
-
-
-
-
+def main(tweet_data_file, pickle_file=None):
+	get_top_terms_boxes(tweet_data_file, pickle_file)
 
 
 if __name__ == '__main__':
