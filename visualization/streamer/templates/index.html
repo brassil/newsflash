@@ -101,7 +101,12 @@
 			ws = new WebSocket("ws://" + host + ":" + port + uri);
 			ws.onmessage = function(evt) {
 				var data = JSON.parse(evt.data);
-				new_tweet(data.latitude, data.longitude);
+				if(data.type == 'files'){
+					console.log(data.files)
+				}else if(data.type == 'tweet'){
+					new_tweet(data.tweet.latitude, data.tweet.longitude);
+				}
+
 			};
 			ws.onclose = function(evt) { console.log("Connection close"); };
 			ws.onopen = function(evt) { 

@@ -11,6 +11,8 @@ import json
 import sys
 import csv
 import re
+import os
+import argparse
 
 clients = []
 isFirst = True
@@ -35,6 +37,9 @@ signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 
 http_method = "GET"
 
+directory = "/"
+
+threads = []
 
 http_handler  = urllib.HTTPHandler(debuglevel=_debug)
 https_handler = urllib.HTTPSHandler(debuglevel=_debug)
@@ -66,9 +71,30 @@ def twitterreq(url, method, parameters):
 
 	return response
 
-def fetch_from_manhattan():
+#once source is defined in the stream_tweets thread, iterate over the source and stream them
+def retrieve_tweets(source, mode):
+	thread = threading.current_thread()
+	for tweet in source:
+		if thread.stop:
+			threads.remove(thread)
+			break
+		tweets_info = None
+		if (mode == 'live'):
+			tweets_info = parse_tweet(tweet)
+		if (mode == 'file'):
+			tweets_info = [tweet]
+
+		if tweets_info is not None:
+			print {'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}
+			if mode == 'file':time.sleep(2)
+			for client in clients:
+				client.write_message(json.dumps({'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}))
+
+def stream_tweets(mode='live', data_file=None, data_dir=None):
 	'''
-	main documentation here:
+	Get tweets either from a file or from the API.
+
+	For API call, main documentation here:
 	https://dev.twitter.com/streaming/reference/post/statuses/filter
 	
 	chose bounding box by picking points on google maps and then 
@@ -77,18 +103,25 @@ def fetch_from_manhattan():
 	SW corner: 40.63,-74.12
 	NE corner: 40.94,-73.68
 	'''
-
+	source = None
 	url = 'https://stream.twitter.com/1.1/statuses/filter.json'
 	add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
-	response = twitterreq((url+add), 'GET', [])
 
-	for line in response:
-		tweets_info = parse_tweet(line)
-		if tweets_info is not None:
-			print tweets_info
-			
-			for client in clients:
-				client.write_message(json.dumps({'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7]}))
+	#if the thread has been started with the LIVE mode specified
+	if (mode == 'live'):
+		print "--- SWITCHING TO LIVE MODE ---"
+		source = twitterreq((url+add), 'GET', [])
+		retrieve_tweets(source, mode)
+
+	#if the thread has been started with the FILE mode specified
+	elif (mode == 'file' and data_file != None):
+		print "--- SWITCHING TO FILE MODE ---"
+		with open(data_dir+data_file, 'r') as tweet_file:
+			source = csv.reader(tweet_file)
+			next(source, None)
+			retrieve_tweets(source, mode)
+	else:
+		print "ERROR: invalid mode requested!"
 
 
 def parse_tweet(t):
@@ -144,19 +177,44 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def open(self):
 		global isFirst
 		global clients
+		global directory
 		print 'new connection'
+		self.write_message(json.dumps({'type' : 'files', 'files' : os.listdir(directory)}))
 		clients.append(self)
 		if isFirst:
-			t = threading.Thread(target=fetch_from_manhattan)
+			t = threading.Thread(target=stream_tweets)
+			threading.Thread.stop = False
 			t.start()
+			t.stop = False
+			threads.append(t)
 			self.isFirst = False
 	
 	def on_message(self, message):
-		print 'message received %s' % message
+		global directory
+		data = json.loads(message.encode('utf-8'))
+		if (data['type'] == 'mode_change'):
+			for thread in threads:
+				thread.stop = True
+			args = ()
+			if (data['details']['mode'] == 'file'):
+				args=('file', data['details']['file'], directory)
+
+			print "ATTEMPTING SWITCH"
+			print args
+
+			t = threading.Thread(target=stream_tweets, args=args)
+			threading.Thread.stop = False
+			t.stop = False
+			threads.append(t)
+			t.start()
+
 
 	def on_close(self):
+		global threads
 		clients.remove(self)
 		if len(clients) == 0:
+			for thread in threads:
+				thread.stop = True
 			isFirst = True
 		print 'connection closed'
 
@@ -164,6 +222,15 @@ application = tornado.web.Application([(r'/ws', WSHandler),])
 
 
 if __name__ == "__main__":
+	directory = sys.argv[1]
 	http_server = tornado.httpserver.HTTPServer(application)
 	http_server.listen(8888)
-	tornado.ioloop.IOLoop.instance().start()
+	try:
+		tornado.ioloop.IOLoop.instance().start()
+	except KeyboardInterrupt:
+		for thread in threads:
+			thread.stop = True
+		try:
+			sys.exit(0)
+		except SystemExit:
+			os._exit(0)
