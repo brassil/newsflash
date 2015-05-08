@@ -57,7 +57,7 @@ class Tokenizer:
 
 
 	def tokenize(self, tweet):
-		words = []
+		words = set()
 
 		# fix the most common HTML escapes
 		tweet = tweet.replace('&quot;','').replace('&nbsp;',' ').replace('&amp;',' ')
@@ -79,7 +79,9 @@ class Tokenizer:
 			if not w[0].isalpha(): continue # ignore words that don't start with alphabet
 			if w in stopwords: continue # ignore stopwords
 
-			words.append(w)
+			if w=='URL' or w=='AT_USER': continue # ignore these for now
+
+			words.add(w)
 
 
 		return words
