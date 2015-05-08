@@ -22,6 +22,8 @@ created 2015-05-06 02:20h
 
 class Newsflash:
 	def __init__(self):
+		self.tokenizer = Tokenizer()
+
 		# just an inverse index, with list of tweet IDs per term
 		# might be good to combine with ranks and add time/location s.t.
 		# we're not looking up things as much.
@@ -90,23 +92,14 @@ def remove_old(nf):
 
 
 def get_tweets_by_term(nf, term):
-	'''
-	returns a 2-tuple (box, tweets):
-	- box = bounding box for this term. box is a list of 2-tuples, where each
-			2-tuple is (lat,lon) for the SW, NW, NE, and SE corners (in that
-			order, s.t. the list has length 4)
-	- tweets = list of tweets containing this term. Each element in the list is
-			a 2-tuple, with elements (location, text). location itself is a
-			2-tuple of floats (lat,lon); text is a str with the text of 
-			the tweet.
-	'''
-
 	if len(nf.ranks) == 0:
 		e = 'ERROR - rankings have not been calculated yet'
 		sys.stderr.write(e+'\n')
-		return [e,[]] # idk just something in a similar format
+		return [e] # idk just something in a similar format
 
-	return {'bounding_box' : get_corners(nf.ranks[term].box), 'tweets' : [{'location' : nf.tweets[tid].loc, 'tweet' : nf.tweets[tid].text} for tid in nf.terms[term]]}
+	return {'bounding_box' : get_corners(nf.ranks[term].box), 
+			'tweets' : [{'location' : nf.tweets[tid].loc, 
+			'tweet' : nf.tweets[tid].text} for tid in nf.terms[term]]}
 
 
 
@@ -149,14 +142,14 @@ def find_related_tweets(nf, start_terms):
 
 
 
-def parse_tweet(nf, tokenizer, t):
+def parse_tweet(nf, t):
 	'''
 	takes in the tweet as a string. I'm thinking that initializing
 	a new CSV reader for each tweet is prob inefficient but idk we'll see
 	'''
 	tid = t[0]
 
-	words = tokenizer.tokenize(t[7])
+	words = nf.tokenizer.tokenize(t[7])
 	for word in words: nf.terms[word].append(tid) # add to inverse index
 
 	# add URLs
@@ -171,8 +164,10 @@ def parse_tweet(nf, tokenizer, t):
 '''
 Take in the nf object and compute the rankings for all terms in the terms dictionary
 Store each term's ranking in the nk.ranks attribute of the nf object
-For each term, compute the recursive bounding boxes and store them as a parameter of the Ranks object, stored as the Value for the term (Key) in the nk.ranks dictionary
-If the return_sorted argument is passed as true, sort the rankings and return the terms for the rankings, in order
+For each term, compute the recursive bounding boxes and store them as a parameter 
+of the Ranks object, stored as the Value for the term (Key) in the nk.ranks dictionary
+If the return_sorted argument is passed as true, sort the rankings 
+and return the terms for the rankings, in order
 Otherwise, return None
 '''
 def compute_rankings(nf, return_sorted=False):
@@ -213,24 +208,6 @@ def compute_rankings(nf, return_sorted=False):
 	else:
 		return None
 
-'''
-INPUT: a term (string of a word)
-PROCESS:
-	Get the ranking of the term, which includes the bounding boxes calculated in compute_rankings
-	Print the term, its frequency, some other frequency (what is it Aaron?) and the term's final bounding box size as calculated in compute_rankings
-	return the rank object
-'''
-def get_bound_for_term(term, nf):
-
-	# code for the visual bounding box animation
-	#top_20 = sorted_rankings[:20]
-
-	#top_corners = []
-	#for term in top_20:
-	rank = nf.ranks[term]
-	#top_corners.append(rank.corners)
-	print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
-	return rank
 
 def print_top_x_links(nf, x):
 	print '\nTOP '+str(x)+' links'
@@ -247,14 +224,14 @@ OUTPUT:
 '''
 def get_top_x_terms(sorted_terms, x, nf):
 	#if the number of terms requested is greater than those available
-	if x>len(sorted_terms): 
-		x=len(sorted_terms)
-	return (sorted_terms[:x], [nf.ranks[term].corners for term in sorted_terms[:x]])
+	if x > len(sorted_terms): x = len(sorted_terms)
+
+	topx = sorted_terms[:x]
+	return (topx, [nf.ranks[term].corners for term in topx])
 
 
 def train_nf(tweet_data_file, pickle_file=None):
 	nf = Newsflash()
-	tokenizer = Tokenizer()
 
 	# initialize things -- later we will read from tweets in real 
 	# time but rn it's a static file
@@ -263,11 +240,13 @@ def train_nf(tweet_data_file, pickle_file=None):
 		next(r, None) # eliminate header row
 
 		# need to catch first tweet for its timestamp
-		nf.first_tweet = parse_tweet(nf, tokenizer, next(r, None))
+		nf.first_tweet = parse_tweet(nf, next(r, None))
 
-		for row in r: nf.last_tweet = parse_tweet(nf, tokenizer, row)
+		for row in r: nf.last_tweet = parse_tweet(nf, row)
+	
 	if pickle_file:
 		pickle.dump(nf, file(pickle_file, 'w'))
+	
 	return nf
 
 
