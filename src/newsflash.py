@@ -34,6 +34,11 @@ class Newsflash:
 		self.last_tweet = None
 
 
+def remove_old(nf):
+	'''
+	remove all tweets older than X days?
+	'''
+	pass
 
 
 
@@ -89,12 +94,6 @@ def compute_rankings(nf):
 		print term
 
 
-def remove_old(nf):
-	'''
-	remove all tweets older than X days?
-	'''
-	pass
-
 
 
 
@@ -114,13 +113,8 @@ def main(tweet_data_file, pickle_file=None):
 
 	compute_rankings(nf)
 
-	pickle.dump(nf, file(pickle_file, 'w'))
-
-
-
-
-
-
+	if pickle_file:
+		pickle.dump(nf, file(pickle_file, 'w'))
 
 
 
