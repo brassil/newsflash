@@ -171,7 +171,7 @@ def parse_tweet(nf, tokenizer, t):
 
 	# add URLs
 	for url in literal_eval(t[10]):
-		nf.urls[url].append(tid)
+		nf.urls[url.lower()].append(tid) # ignore case
 
 	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), words, t[7])
 
