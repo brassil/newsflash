@@ -78,7 +78,7 @@
 			}
 			#map{
 				position: absolute;
-				left: 0;
+				left: 250px;
 				right: 0;
 				top: 0;
 				bottom: 120px;
@@ -136,19 +136,27 @@
 				bottom: 0;
 				height: 30px;
 				right: 10px;
-				width: 128px;
+				width: 148px;
 			}
 			
 			.blue{
 				background-color: #3498DB;
+				transition: all 0.2s;
 			}
 			
-			.dark_blue{
+			.blue:hover{
 				background-color: #2C3E50;
+				transition: all 0.2s;
 			}
 			
 			.red{
 				background-color: #E74C3C;
+				transition: all 0.2s;
+			}
+			
+			.red:hover{
+				background-color: #aa382b;
+				transition: all 0.2s;
 			}
 			
 			.button{
@@ -160,15 +168,18 @@
 				font-weight: 500;
 				text-align: center;
 				height: 20px;
-				width: 50px;
+				width: 60px;
 				line-height: 20px;
 				margin-left: 10px;
 				color: white;
-				cursor: pointer;
 			}
 			
 			.grey{
 				background-color: #d7d7d7;
+			}
+			
+			.button.red, .button.blue{
+				cursor: pointer;
 			}
 			
 			.option_highlight{
@@ -180,29 +191,101 @@
 				width: 100%;
 			}
 			
+			aside{
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 250px;
+				bottom: 120px;
+				box-shadow: 1px 0px 1px rgba(0, 0, 0, .3);
+				z-index: 1;
+				background-color: #e4e4e4;
+				padding-left: 20px;
+			}
+			
+			#term_stats{
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			
+			#term_stats li ul{
+				list-style: none;
+				font-size: small;
+			}
+			
+			#term_stats li{
+				padding-left: 10px;
+				padding-right: 10px;
+				padding-bottom: 5px;
+				padding-top: 5px;
+			}
+			
+			#term_stats > li:nth-child(odd){
+				background-color: #dcdcdc;
+			}
+			#term_stats > li:nth-child(even){
+				background-color: #e6e6e6;
+			}
+			
+			#stats_wrapper{
+				position: absolute;
+				top: 75px;
+				bottom: 10px;
+				right: 10px;
+				left: 20px;
+				overflow-x: scroll;
+				border-radius: 3px;
+			}
+			#stats_inner{
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				top: 0;
+				border-radius: 3px;
+				box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.5);
+				background-color: transparent;
+				pointer-events: none;
+			}
+			#stats_scroll{
+				position: relative;
+				width: 100%;
+				height: 100%;
+				overflow-y: scroll;
+			}
 		</style>
 	</head>
 	<body>
-		<section class="popup pu_effect" id="file_select">
+		<section class="popup pu_effect" id="file_select" file="None">
 			<h2>Available Files</h2>
 			<div id="file_wrapper">
 				<ul>
 				</ul>
 			</div>
 			<section id="buttons">
-				<div class="button blue" id="bound" select="false">
-					Bound
+				<div class="button grey" id="analyze">
+					Analyze
 				</div>
-				<div class="button grey" id="select" file="None">
-					Select
+				<div class="button grey" id="stream">
+					Stream
 				</div>
 			</section>
 		</section>
+		<aside>
+			<h2>Tweet Statistics</h2>
+			<div id="stats_wrapper">
+				
+				<div id="stats_scroll">
+					<ul id="term_stats"></ul>
+				</div>
+				<div id="stats_inner"></div>
+			</div>
+		</aside>
 		<section id="map">
 		</section>
 		<nav>
 			<section id="vis_select">
-				<h3>Stream Type</h3>
+				<h3>Stream Type</h3>				
 				<ul id="vis_list">
 					<li id="live">Live</li>
 					<li id="file">From File</li>
@@ -216,30 +299,31 @@
 		</nav>
 	<script>
 		
+		var terms = [];
+		var links = [];
+		
+		
+		Number.prototype.toFixedDown = function(digits) {
+		    var re = new RegExp("(\\d+\\.\\d{" + digits + "})(\\d)"),
+		        m = this.toString().match(re);
+		    return m ? parseFloat(m[1]) : this.valueOf();
+		};
+		
 		$(document).on('click', '#file_select ul li', function(event){
 			if(!$(this).hasClass('option_highlight')){
 				$('#file_select ul li').removeClass('option_highlight');
 				$(this).addClass('option_highlight');
-				if($('#select').attr('file') == 'None'){
-					$('#select').toggleClass('grey').toggleClass('red');
+				if($('#file_select').attr('file') == 'None'){
+					$('#stream').toggleClass('grey').toggleClass('red');
+					$('#analyze').toggleClass('grey').toggleClass('blue');
 				}	
-				$('#select').attr('file', $(this).attr('file'));
+				$('#file_select').attr('file', $(this).attr('file'));
 			}else{
 				$('#file_select ul li').removeClass('option_highlight');
-				$('#select').attr('file', 'None').toggleClass('grey').toggleClass('red');
+				$('#file_select').attr('file', 'None');
+				$('#stream').toggleClass('grey').toggleClass('red');
+				$('#analyze').toggleClass('grey').toggleClass('blue');
 			}		
-		});
-		
-		
-		$('#bound').click(function(){
-			var b = $(this);
-			if(b.attr('select') == 'yes'){
-				b.attr('select', 'no');	
-				b.removeClass('dark_blue').addClass('blue');
-			}else{
-				b.attr("select","yes");
-				b.removeClass('blue').addClass('dark_blue');
-			}
 		});
 		
 		$('#file').click(function(event){
@@ -376,6 +460,16 @@
 							'stroke-width' : '1px'
 						});
 					
+				}else if(data.type == 'top_term_stats'){
+					terms = data.stats;
+					for (var x=0; x<terms.length; x++){
+						var li = $('<li>'+terms[x].term+'<ul><li>Freq: '+terms[x].freq.toFixedDown(2)+'</li><li>∆ Freq: '+terms[x].dfreq.toFixedDown(5)+'</li><li>Bound Size: '+terms[x].box_size.toFixedDown(2)+'</li></ul></li>');
+						li.data(terms[x]);
+						$('#term_stats').append(li);
+					}
+				}else if(data.type == 'top_links'){
+					links = data.links;
+					console.log(links);
 				}
 			};
 			ws.onclose = function(evt) { console.log("Connection close"); };
@@ -383,20 +477,26 @@
 				console.log('CONNECTION OPEN');
 			};
 			
-			$('#select').click(function(){
+			$(document).on('click', )
+			
+			$('#analyze').click(function(){
+
 				$('#file_select').removeClass('pu_show');
 				event.stopPropagation();
-				var data;
-				if($('#bound').attr('select') == 'yes'){
-					data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
-				}else{
-					data = {type : 'mode_change', details : {mode : 'bound', file :$(this).attr('file')}};
-				}
+				var data = {type : 'mode_change', details : {mode : 'analyze', file : $('#file_select').attr('file')}};
+				ws.send(JSON.stringify(data));
+			});
+			
+			$('#stream').click(function(){
+				$('#file_select').removeClass('pu_show');
+				event.stopPropagation();
+				var	data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
+				
 				var data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
 				if($('#bound').attr('select')=='yes'){
 					data.details.mode = 'bound';
 				}
-				ws.send(JSON.stringify(data));		
+				ws.send(JSON.stringify(data));	
 			});
 			
 			$('#live').click(function(){
