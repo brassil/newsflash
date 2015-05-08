@@ -214,7 +214,7 @@
 				font-size: small;
 			}
 			
-			#term_stats li{
+			#term_stats > li{
 				padding-left: 10px;
 				padding-right: 10px;
 				padding-bottom: 5px;
@@ -344,22 +344,21 @@
 		var flat_ui = ['#2C3E50', '#E74C3C', '#ECF0F1', '#3498DB', '#2980B9'];
 
 		var projection = d3.geo.albers()
-			.center([0, 39.83])
-			.rotate([98.58, 0])
+			.center([0, 40.682999])
+			.rotate([73.85, 0])
 			.parallels([50, 60])
-			.scale(1000)
+			.scale(66000)
 			.translate([width / 2, height / 2]);
 
 			
-		d3.json("static/us.json", function(error, us) {
+		d3.json("static/nyc.json", function(error, nyc) {
 			if (error) return console.error(error);
-
 			var svg = d3.select("#map").append("svg")
 			    .attr("width", width)
 			    .attr("height", height)
 			    .style('background-color', nyc_map[1])
 			    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
-			var subunits = topojson.feature(us, us.objects.states);
+			var subunits = topojson.feature(nyc, nyc.objects.boroughs);
 
 			var path = d3.geo.path()
 				.projection(projection)
@@ -381,17 +380,58 @@
 					.delay(5000);
 			}
 
-			function new_tweet(lat, longitude){
+			function new_tweet(lat, longitude, fade){
 				var point = svg.append("path")
 					.datum({type: "MultiPoint", coordinates: [{'0' : String(longitude), '1' : String(lat)}]})
 					.attr("class", "points")
 					.attr("d", path)
 					.style('fill', nyc_map[0])
 					.style('opacity', '0');
-				point.transition()
+				if(fade){
+					point.transition()
 					.duration(1250)
 					.style('opacity', '1')
 					.each('end', fade_out(point));
+				}else{
+					point.style('opacity', '1');
+				}
+				
+			}
+			
+			
+			function draw_box(coords){
+				var lines = [];
+				for (var i=0; i<3; i++){
+					lines.push({
+						type: "LineString",
+						coordinates : [
+							[coords[i][1], coords[i][0]],
+							[coords[i+1][1], coords[i+1][0]]
+						]
+					});
+				}
+				lines.push({
+					type: "LineString",
+					coordinates : [
+						[coords[3][1], coords[3][0]],
+						[coords[0][1], coords[0][0]]
+					]
+				});
+				
+				arcGroup.selectAll('.arc').remove();	
+				var pathArcs = arcGroup.selectAll('.arc')
+					.data(lines)
+					.enter()
+					.append('path').attr({
+						'class' : 'arc'
+					}).style({
+						fill: 'none',
+					}).attr({
+						d: path
+					}).style({
+						stroke: '#0000ff',
+						'stroke-width' : '1px'
+					});
 			}
 
 			var points = d3.selectAll('.points');
@@ -408,6 +448,15 @@
 				arcGroup.attr('transform', "translate(" + t + ")scale(" + s + ")");
 			}
 			
+			function reset_view(){
+				land.attr("transform","translate("+ 
+					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+				svg.selectAll('.points').attr("transform","translate("+ 
+					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+				arcGroup.selectAll('.arc').attr("transform","translate("+ 
+					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+			}
+			
 			var ws;
 			var host = 'localhost';
 			var port = '8888';
@@ -421,49 +470,15 @@
 					}
 				}else if(data.type == 'tweet'){
 					$('#tweet_text').html('<p>'+data.tweet.tweet+'</p>');
-					new_tweet(data.tweet.latitude, data.tweet.longitude);
+					new_tweet(data.tweet.latitude, data.tweet.longitude, true);
 				}else if(data.type == 'top_terms'){
 					console.log(data.terms);
 				}else if(data.type == 'box'){
-
-					var lines=[]
-					for (var i=0; i<3; i++){
-						lines.push({
-							type: "LineString",
-							coordinates : [
-								[data.box[i][1], data.box[i][0]],
-								[data.box[i+1][1], data.box[i+1][0]]
-							]
-						});
-					}
-					lines.push({
-						type: "LineString",
-						coordinates : [
-							[data.box[3][1], data.box[3][0]],
-							[data.box[0][1], data.box[0][0]]
-						]
-					});
-					
-					arcGroup.selectAll('.arc').remove();
-					
-					var pathArcs = arcGroup.selectAll('.arc')
-						.data(lines)
-						.enter()
-						.append('path').attr({
-							'class' : 'arc'
-						}).style({
-							fill: 'none',
-						}).attr({
-							d: path
-						}).style({
-							stroke: '#0000ff',
-							'stroke-width' : '1px'
-						});
-					
+					draw_box(data.box);
 				}else if(data.type == 'top_term_stats'){
 					terms = data.stats;
 					for (var x=0; x<terms.length; x++){
-						var li = $('<li>'+terms[x].term+'<ul><li>Freq: '+terms[x].freq.toFixedDown(2)+'</li><li>∆ Freq: '+terms[x].dfreq.toFixedDown(5)+'</li><li>Bound Size: '+terms[x].box_size.toFixedDown(2)+'</li></ul></li>');
+						var li = $('<li><i>'+terms[x].term+'</i><ul><li>Freq: '+terms[x].freq.toFixedDown(2)+'</li><li>∆ Freq: '+terms[x].dfreq.toFixedDown(5)+'</li><li>Bound Size: '+terms[x].box_size.toFixedDown(2)+'</li></ul></li>');
 						li.data(terms[x]);
 						$('#term_stats').append(li);
 					}
@@ -477,7 +492,17 @@
 				console.log('CONNECTION OPEN');
 			};
 			
-			$(document).on('click', )
+			$(document).on('click', '#term_stats > li', function(){
+				var data = $(this).data();
+				draw_box(data.tweets.bounding_box);
+				svg.selectAll('.points').remove();
+				for (var tweet=0; tweet<data.tweets.tweets.length; tweet++){
+					new_tweet(data.tweets.tweets[tweet].location[0], data.tweets.tweets[tweet].location[1], false);
+				}
+				if(d3.event != null){
+					reset_view();
+				}
+			});
 			
 			$('#analyze').click(function(){
 
@@ -506,15 +531,15 @@
 			});
 			var zoom = d3.behavior.zoom()
 				.on("zoom",function() {
-					
-					
+					reset_view();
+					/*
 					land.attr("transform","translate("+ 
 						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
 					svg.selectAll('.points').attr("transform","translate("+ 
 						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
 					arcGroup.selectAll('.arc').attr("transform","translate("+ 
 						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
-
+						*/
 				});
 			
 			svg.call(zoom);
