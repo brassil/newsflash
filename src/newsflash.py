@@ -10,7 +10,7 @@ import pickle
 
 from tokenizer import Tokenizer
 from seconds import seconds
-from place import trending_location
+from place import trending_location, get_corners
 
 '''
 does things
@@ -42,6 +42,37 @@ def remove_old(nf):
 
 
 
+def get_tweets_by_term(nf, term):
+	'''
+	returns a 2-tuple with the following two elements:
+	- box = bounding box for this term. box is a list of 2-tuples, where each
+			2-tuple is (lat,lon) for the SW, NW, NE, and SE corners (in that
+			order, s.t. the list has length 4)
+	- tweets = list of tweets containing term. Each element in the list is a
+			   3-tuple, with elements (time, location, text). time is an int
+			   in Unix seconds; location is a 2-tuple (lat,lon); text is a 
+			   str with the text of the tweet.
+	'''
+
+	if len(nf.ranks) == 0:
+		e = 'ERROR - rankings have not been calculated yet'
+		sys.stderr.write(e+'\n')
+		return [e]
+
+	# nf.ranks[term] = (freq, dfreq, box, size, corners)
+	box = get_corners(nf.ranks[term][2])
+	tweets = [nf.tweets[tid] for tid in nf.terms[term]]
+
+	return (box, tweets)
+
+
+
+
+
+
+
+
+
 def parse_tweet(nf, tokenizer, t):
 	'''
 	takes in the tweet as a string. I'm thinking that initializing
@@ -55,8 +86,8 @@ def parse_tweet(nf, tokenizer, t):
 	
 	# loc = np.array((t[5],t[6]), dtype=float)
 	loc = (float(t[5]), float(t[6]))
-	# nf.tweets[tid] = [seconds(t[1]), loc, words] # include tweet text content in the tweets dict
-	nf.tweets[tid] = (seconds(t[1]), loc) # don't enclude tweet text content in the tweets dict
+	nf.tweets[tid] = (seconds(t[1]), loc, words)
+	# nf.tweets[tid] = (seconds(t[1]), loc) # don't include tweet text content in the tweets dict
 
 	return tid # maybe shouldn't return anything but for now it's necessary
 
@@ -80,22 +111,25 @@ def compute_rankings(nf):
 
 		dfreq = today_tweets / (freq/window)
 
+		# now calculate the geography thing
+		all_points = [nf.tweets[tid][1] for tid in tweets]
+		box, size, num_points, corners = trending_location(all_points)
+		today_points_ratio = num_points / float(len(all_points))
+		
+
 		# size is the distance between two corners of the box
-		nf.ranks[term] = (freq, dfreq)
+		nf.ranks[term] = (freq, dfreq, box, size, corners)
 
 
 	sorter = lambda x: x[1][0]*(x[1][1]**2) # *(1+x[1][3])
 	top_20 = list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]
 	top_corners = []
 	for term in top_20:
+		top_corners.append(term[4]) # 5th index is corners
+		print str(term)+'\t%f' % term[3] # 4th index is size
 
-		# now calculate the geography thing
-		all_points = [nf.tweets[tid][1] for tid in tweets]
-		box, size, num_points, corners = trending_location(all_points) # don't need intermediate bounding box rn
-		points_ratio = num_points / float(len(all_points))
-		top_corners.append(corners)
-		print str(term)+'\t%f' % size
 	return (top_20, top_corners)
+
 
 
 def get_top_terms_boxes(tweet_data_file, pickle_file=None):
@@ -107,9 +141,10 @@ def get_top_terms_boxes(tweet_data_file, pickle_file=None):
 	with open(tweet_data_file) as f:
 		r = csv.reader(f)
 		next(r, None) # eliminate header row
-		nf.first_tweet = parse_tweet(nf, tokenizer, next(r, None)) # catch first tweet so you can get its timestamp
 
-		last_tweet = None
+		# need to catch first tweet for its timestamp
+		nf.first_tweet = parse_tweet(nf, tokenizer, next(r, None))
+
 		for row in r: nf.last_tweet = parse_tweet(nf, tokenizer, row)
 
 	top_20, top_corners = compute_rankings(nf)
