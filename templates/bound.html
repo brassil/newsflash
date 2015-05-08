@@ -174,14 +174,21 @@
 			.option_highlight{
 				font-weight: 900;
 			}
+			#file_wrapper{
+				position: relative;
+				float: left;
+				width: 100%;
+			}
 			
 		</style>
 	</head>
 	<body>
 		<section class="popup pu_effect" id="file_select">
 			<h2>Available Files</h2>
-			<ul>
-			</ul>
+			<div id="file_wrapper">
+				<ul>
+				</ul>
+			</div>
 			<section id="buttons">
 				<div class="button blue" id="bound" select="false">
 					Bound
@@ -263,28 +270,25 @@
 		d3.json("static/us.json", function(error, us) {
 			if (error) return console.error(error);
 
-			var zoom = d3.behavior.zoom()
-				.scaleExtent([1, 8])
-				.on("zoom", move);
-
 			var svg = d3.select("#map").append("svg")
 			    .attr("width", width)
 			    .attr("height", height)
 			    .style('background-color', nyc_map[1])
-			    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-			    .call(zoom);
+			    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 			var subunits = topojson.feature(us, us.objects.states);
 
 			var path = d3.geo.path()
 				.projection(projection)
 				.pointRadius(2);
 
-			
-
 			var land = svg.append("path")
 				.datum(subunits)
 				.attr("d", path)
 				.style('fill', nyc_map[3]);
+				
+			var g = svg.append("g");
+			var arcGroup = g.append('g');
+			
 
 			function fade_out(point){
 				point.transition()
@@ -307,7 +311,7 @@
 			}
 
 			var points = d3.selectAll('.points');
-
+			
 			function move() {
 				var t = d3.event.translate,
 					s = d3.event.scale;
@@ -317,6 +321,7 @@
 				
 				land.attr("transform", "translate(" + t + ")scale(" + s + ")");
 				points.attr("transform", "translate(" + t + ")scale(" + s + ")");
+				arcGroup.attr('transform', "translate(" + t + ")scale(" + s + ")");
 			}
 			
 			var ws;
@@ -333,6 +338,44 @@
 				}else if(data.type == 'tweet'){
 					$('#tweet_text').html('<p>'+data.tweet.tweet+'</p>');
 					new_tweet(data.tweet.latitude, data.tweet.longitude);
+				}else if(data.type == 'top_terms'){
+					console.log(data.terms);
+				}else if(data.type == 'box'){
+
+					var lines=[]
+					for (var i=0; i<3; i++){
+						lines.push({
+							type: "LineString",
+							coordinates : [
+								[data.box[i][1], data.box[i][0]],
+								[data.box[i+1][1], data.box[i+1][0]]
+							]
+						});
+					}
+					lines.push({
+						type: "LineString",
+						coordinates : [
+							[data.box[3][1], data.box[3][0]],
+							[data.box[0][1], data.box[0][0]]
+						]
+					});
+					
+					arcGroup.selectAll('.arc').remove();
+					
+					var pathArcs = arcGroup.selectAll('.arc')
+						.data(lines)
+						.enter()
+						.append('path').attr({
+							'class' : 'arc'
+						}).style({
+							fill: 'none',
+						}).attr({
+							d: path
+						}).style({
+							stroke: '#0000ff',
+							'stroke-width' : '1px'
+						});
+					
 				}
 			};
 			ws.onclose = function(evt) { console.log("Connection close"); };
@@ -351,9 +394,7 @@
 				}
 				var data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
 				if($('#bound').attr('select')=='yes'){
-					data.details.bound = true;
-				}else{
-					data.details.bound = false;
+					data.details.mode = 'bound';
 				}
 				ws.send(JSON.stringify(data));		
 			});
@@ -363,6 +404,20 @@
 				var data = {type : 'mode_change', details: {mode : 'live'}};
 				ws.send(JSON.stringify(data));
 			});
+			var zoom = d3.behavior.zoom()
+				.on("zoom",function() {
+					
+					
+					land.attr("transform","translate("+ 
+						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+					svg.selectAll('.points').attr("transform","translate("+ 
+						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+					arcGroup.selectAll('.arc').attr("transform","translate("+ 
+						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+
+				});
+			
+			svg.call(zoom);
 		});
 	</script>
 	</body>
