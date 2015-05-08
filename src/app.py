@@ -92,16 +92,23 @@ def retrieve_tweets(source, mode):
 			for client in clients:
 				client.write_message(json.dumps({'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}))
 
-def get_bounds(data_file, directory):
-	top_20, top_boxes = nf.get_top_terms_boxes(directory+data_file)
-
+def analyze_file(data_file, directory):
+	nf_obj = nf.train_nf(directory+data_file)
+	sorted_terms = nf.compute_rankings(nf_obj, True)
+	top_20_terms, top_20_boxes = nf.get_top_x_terms(sorted_terms, 20, nf_obj)
+	stat_data = {'type' : 'top_term_stats', 'stats' : []}
+	for term_ind in range(0,len(top_20_terms)):
+		term = top_20_terms[term_ind]
+		rank = nf_obj.ranks[term]
+		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 'boxes' : top_20_boxes[term_ind]})
+	top_10_links = list(reversed(sorted(nf_obj.urls, key=lambda x: len(nf_obj.urls[x]))))[:10]
+	link_data = {'type' : 'top_links', 'links' : [link for link in top_10_links]}
 	for client in clients:
-		client.write_message(json.dumps({'type' : 'top_terms', 'terms' : top_20}))
-		for boxes in top_boxes:
-			for box in boxes:
-				client.write_message(json.dumps({'type' : 'box', 'box' : box}))
-				time.sleep(1)
-			time.sleep(10)
+		print stat_data
+		print link_data
+		client.write_message(json.dumps(stat_data));
+		client.write_message(json.dumps(link_data));
+
 
 def stream_tweets(mode='live', data_file=None, data_dir=None):
 	'''
@@ -212,10 +219,11 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			results = []
 			target = stream_tweets
 			if (data['details']['mode'] == 'file'):
+				console.log('FILE');
 				args=('file', data['details']['file'], directory)
-			elif (data['details']['mode'] == 'bound'):
+			elif (data['details']['mode'] == 'analyze'):
 				args = (data['details']['file'], directory)
-				target = get_bounds
+				target = analyze_file
 			t = threading.Thread(target=target, args=args)
 			threading.Thread.stop = False
 			t.stop = False

@@ -148,15 +148,6 @@ def find_related_tweets(nf, start_terms):
 	return terms
 
 
-		
-
-
-
-
-
-
-
-
 
 
 def parse_tweet(nf, tokenizer, t):
@@ -178,8 +169,14 @@ def parse_tweet(nf, tokenizer, t):
 	return tid
 
 
-
-def compute_rankings(nf):
+'''
+Take in the nf object and compute the rankings for all terms in the terms dictionary
+Store each term's ranking in the nk.ranks attribute of the nf object
+For each term, compute the recursive bounding boxes and store them as a parameter of the Ranks object, stored as the Value for the term (Key) in the nk.ranks dictionary
+If the return_sorted argument is passed as true, sort the rankings and return the terms for the rankings, in order
+Otherwise, return None
+'''
+def compute_rankings(nf, return_sorted=False):
 	start = nf.tweets[nf.first_tweet].time
 	end = nf.tweets[nf.last_tweet].time
 	window = (end-start)/86400 # seconds per day = 86,400
@@ -206,33 +203,57 @@ def compute_rankings(nf):
 		# is actually given to Rank or even used.
 		nf.ranks[term] = Rank(freq, dfreq, box, box_size, corners)
 
+	if return_sorted:
+		# YO this whole section of code is p bloated and not great, but I'm just keeping
+		# it for now while I'm changing the format to classes.
+		sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
+		sorted_rankings = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
 
+		# find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
+		return sorted_rankings
+	else:
+		return None
 
-	# YO this whole section of code is p bloated and not great, but I'm just keeping
-	# it for now while I'm changing the format to classes.
-	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
-	sorted_rankings = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
-
-	# find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
+'''
+INPUT: a term (string of a word)
+PROCESS:
+	Get the ranking of the term, which includes the bounding boxes calculated in compute_rankings
+	Print the term, its frequency, some other frequency (what is it Aaron?) and the term's final bounding box size as calculated in compute_rankings
+	return the rank object
+'''
+def get_bound_for_term(term, nf):
 
 	# code for the visual bounding box animation
-	top_20 = sorted_rankings[:20]
-	top_corners = []
-	for term in top_20:
-		rank = nf.ranks[term]
-		top_corners.append(rank.corners)
-		print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
+	#top_20 = sorted_rankings[:20]
 
+	#top_corners = []
+	#for term in top_20:
+	rank = nf.ranks[term]
+	#top_corners.append(rank.corners)
+	print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
+	return rank
 
-	print '\nTOP 10 links'
-	for url in list(reversed(sorted(nf.urls, key=lambda x: len(nf.urls[x]))))[:10]:
+def print_top_x_links(nf, x):
+	print '\nTOP '+str(x)+' links'
+	for url in list(reversed(sorted(nf.urls, key=lambda x: len(nf.urls[x]))))[:x]:
 		print '%d \t %s' % (len(nf.urls[url]), url)
 
-	return (top_20, top_corners)
+'''
+INPUT: 
+	all terms as String of term ranked
+	desired number of top results, x
+OUTPUT: 
+	the top x terms, listed in order
+	the bounding boxes, in decreasing size, for the top x terms
+'''
+def get_top_x_terms(sorted_terms, x, nf):
+	#if the number of terms requested is greater than those available
+	if x>len(sorted_terms): 
+		x=len(sorted_terms)
+	return (sorted_terms[:x], [nf.ranks[term].corners for term in sorted_terms[:x]])
 
 
-
-def get_top_terms_boxes(tweet_data_file, pickle_file=None):
+def train_nf(tweet_data_file, pickle_file=None):
 	nf = Newsflash()
 	tokenizer = Tokenizer()
 
@@ -246,17 +267,22 @@ def get_top_terms_boxes(tweet_data_file, pickle_file=None):
 		nf.first_tweet = parse_tweet(nf, tokenizer, next(r, None))
 
 		for row in r: nf.last_tweet = parse_tweet(nf, tokenizer, row)
-
-	top_20, top_corners = compute_rankings(nf)
-
 	if pickle_file:
 		pickle.dump(nf, file(pickle_file, 'w'))
+	return nf
 
-	return (top_20, top_corners)
 
 
 def main(tweet_data_file, pickle_file=None):
-	get_top_terms_boxes(tweet_data_file, pickle_file)
+	nf = train_nf(tweet_data_file, pickle_file)
+	sorted_terms = compute_rankings(nf, True)
+	top_20_terms, top_20_boxes = get_top_x_terms(sorted_terms, 20, nf)
+	for term in top_20_terms:
+		rank = nf.ranks[term]
+		print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
+	print_top_x_links(nf, 10)
+
+
 
 
 if __name__ == '__main__':
