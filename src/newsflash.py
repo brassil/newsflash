@@ -49,9 +49,8 @@ def get_tweets_by_term(nf, term):
 			2-tuple is (lat,lon) for the SW, NW, NE, and SE corners (in that
 			order, s.t. the list has length 4)
 	- tweets = list of tweets containing term. Each element in the list is a
-			   3-tuple, with elements (time, location, text). time is an int
-			   in Unix seconds; location is a 2-tuple (lat,lon); text is a 
-			   str with the text of the tweet.
+			   2-tuple, with elements (location, text). location is a 2-tuple 
+			   (lat,lon); text is a str with the text of the tweet.
 	'''
 
 	if len(nf.ranks) == 0:
@@ -61,10 +60,24 @@ def get_tweets_by_term(nf, term):
 
 	# nf.ranks[term] = (freq, dfreq, box, size, corners)
 	box = get_corners(nf.ranks[term][2])
-	tweets = [nf.tweets[tid] for tid in nf.terms[term]]
+	tweets = []
+	for tid in nf.terms[term]:
+		t = nf.tweets[tid]
+		tweets.append(t[1],t[3])
 
 	return (box, tweets)
 
+
+
+
+def find_related_tweets(nf, terms):
+	'''
+	takes in the top n terms and tries to find groups of related tweets
+	at first we're using 100 but this can be changed
+	'''
+	level = 10 # go 10 deep before we stop
+
+	explored_tweets = []
 
 
 
@@ -86,7 +99,7 @@ def parse_tweet(nf, tokenizer, t):
 	
 	# loc = np.array((t[5],t[6]), dtype=float)
 	loc = (float(t[5]), float(t[6]))
-	nf.tweets[tid] = (seconds(t[1]), loc, words)
+	nf.tweets[tid] = (seconds(t[1]), loc, words, t[7])
 	# nf.tweets[tid] = (seconds(t[1]), loc) # don't include tweet text content in the tweets dict
 
 	return tid # maybe shouldn't return anything but for now it's necessary
@@ -122,7 +135,12 @@ def compute_rankings(nf):
 
 
 	sorter = lambda x: x[1][0]*(x[1][1]**2) # *(1+x[1][3])
-	top_20 = list(reversed(sorted(nf.ranks.items(), key=sorter)))[:20]
+	sorted_rankings = list(reversed(sorted(nf.ranks.items(), key=sorter)))
+
+	find_related_tweets(nf, [x[0] for i,x in enumerate(sorted_rankings) if i<100])
+
+	# code for the visual bounding box animation
+	top_20 = sorted_rankings[:20]
 	top_corners = []
 	for term in top_20:
 		top_corners.append(term[4]) # 5th index is corners
