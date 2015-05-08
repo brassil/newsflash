@@ -34,6 +34,32 @@ class Newsflash:
 		self.last_tweet = None
 
 
+class Tweet:
+	def __init__(self, time, loc, words, text):
+		self.time = time # float (I think), Unix time, seconds
+		self.loc = loc # 2-tuple (lat,lon), each is a float
+		self.words = words # set of tokenized terms in the tweet
+		self.text = text # raw text of the tweet
+
+
+class Rank:
+	def __init__(self, freq, dfreq, box, box_size, corners):
+		self.freq = freq # number of tweets containing this term
+		self.dfreq = dfreq # relative rate of related tweets (last 24h vs. overall)
+		self.box = box # bounding box [[minlat, maxlat], [minlon,maxlon]]
+		self.box_size = box_size # distance between two far corners of the bounding box
+
+		# list of corners, progressively zooming in to display the process
+		# of the trending_location function. each corner is a lisf of 4 
+		# 2-tuples (lat,lon), with the order SW, NW, NE, SE
+		# don't necessarily need this, progression of zooming in bounding box
+		self.corners = corners
+
+
+
+
+
+
 def remove_old(nf):
 	'''
 	remove all tweets older than X days?
@@ -49,8 +75,8 @@ def get_tweets_by_term(nf, term):
 			2-tuple is (lat,lon) for the SW, NW, NE, and SE corners (in that
 			order, s.t. the list has length 4)
 	- tweets = list of tweets containing term. Each element in the list is a
-			   2-tuple, with elements (location, text). location is a 2-tuple 
-			   (lat,lon); text is a str with the text of the tweet.
+			   2-tuple, with elements (location, text). location itself is a 
+			   2-tuple (lat,lon); text is a str with the text of the tweet.
 	'''
 
 	if len(nf.ranks) == 0:
@@ -58,12 +84,11 @@ def get_tweets_by_term(nf, term):
 		sys.stderr.write(e+'\n')
 		return [e]
 
-	# nf.ranks[term] = (freq, dfreq, box, size, corners)
-	box = get_corners(nf.ranks[term][2])
+	# nf.ranks[term] = (freq, dfreq, box, box_size, corners)
+	box = get_corners(nf.ranks[term].box)
 	tweets = []
 	for tid in nf.terms[term]:
-		t = nf.tweets[tid]
-		tweets.append(t[1],t[3])
+		tweets.append(nf.tweets[tid].loc, nf.tweets[tid].text)
 
 	return (box, tweets)
 
@@ -96,19 +121,15 @@ def parse_tweet(nf, tokenizer, t):
 	words = tokenizer.tokenize(t[7])
 	for word in words: nf.terms[word].append(tid) # add to inverse index
 
-	
-	# loc = np.array((t[5],t[6]), dtype=float)
-	loc = (float(t[5]), float(t[6]))
-	nf.tweets[tid] = (seconds(t[1]), loc, words, t[7])
-	# nf.tweets[tid] = (seconds(t[1]), loc) # don't include tweet text content in the tweets dict
+	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), words, t[7])
 
-	return tid # maybe shouldn't return anything but for now it's necessary
+	return tid
 
 
 
 def compute_rankings(nf):
-	start = nf.tweets[nf.first_tweet][0]
-	end = nf.tweets[nf.last_tweet][0]
+	start = nf.tweets[nf.first_tweet].time
+	end = nf.tweets[nf.last_tweet].time
 	window = (end-start)/86400 # seconds per day = 86,400
 
 	print 'tweet collection window = %f days' % window
@@ -120,31 +141,35 @@ def compute_rankings(nf):
 		# for now, I'll just compare freq in the last day to freq overall
 		today_tweets = 0 # number of tweets w/ this term in the last 24h
 		for tid in tweets:
-			if end - nf.tweets[tid][0] < 86400: today_tweets += 1 # seconds per day = 86,400
+			if end - nf.tweets[tid].time < 86400: today_tweets += 1 # seconds per day = 86,400
 
 		dfreq = today_tweets / (freq/window)
 
 		# now calculate the geography thing
-		all_points = [nf.tweets[tid][1] for tid in tweets]
-		box, size, num_points, corners = trending_location(all_points)
+		all_points = [nf.tweets[tid].loc for tid in tweets]
+		box, box_size, num_points, corners = trending_location(all_points)
 		today_points_ratio = num_points / float(len(all_points))
 		
+		# note that not everything being returned by trending_location
+		# is actually given to Rank or even used.
+		nf.ranks[term] = Rank(freq, dfreq, box, box_size, corners)
 
-		# size is the distance between two corners of the box
-		nf.ranks[term] = (freq, dfreq, box, size, corners)
 
 
-	sorter = lambda x: x[1][0]*(x[1][1]**2) # *(1+x[1][3])
-	sorted_rankings = list(reversed(sorted(nf.ranks.items(), key=sorter)))
+	# YO this whole section of code is p bloated and not great, but I'm just keeping
+	# it for now while I'm changing the format to classes.
+	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
+	sorted_rankings = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
 
-	find_related_tweets(nf, [x[0] for i,x in enumerate(sorted_rankings) if i<100])
+	find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
 
 	# code for the visual bounding box animation
 	top_20 = sorted_rankings[:20]
 	top_corners = []
 	for term in top_20:
-		top_corners.append(term[4]) # 5th index is corners
-		print str(term)+'\t%f' % term[3] # 4th index is size
+		rank = nf.ranks[term]
+		top_corners.append(rank.corners)
+		print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
 
 	return (top_20, top_corners)
 
