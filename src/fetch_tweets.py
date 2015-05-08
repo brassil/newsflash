@@ -173,7 +173,10 @@ def run_newsflash(nf_pickle_file):
         if update == 50:
             sys.stdout.write('Recomputing rankings\n')
             update = 0
-            compute_rankings(nf)
+            rankings = compute_rankings(nf, True)
+            for term in rankings[:20]:
+                rank = nf.ranks[term]
+                print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size) 
             sys.stdout.write('\n')
 
 
