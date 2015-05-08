@@ -88,7 +88,7 @@ def compute_rankings(end, window):
 
 
 
-def main(tweet_data_file):
+def compute_bounds(tweet_data_file):
 	# initialize things -- later we will read from tweets in real 
 	# time but rn it's a static file
 	with open(tweet_data_file) as f:
@@ -112,21 +112,3 @@ def main(tweet_data_file):
 			for box in all_boxes:
 				#do shit here with the boxes (like stream to vis)
 		points_ratio = num_points / float(len(all_points))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
-	main(sys.argv[1])

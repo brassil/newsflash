@@ -14,6 +14,8 @@ import re
 import os
 import argparse
 
+import newsflash
+
 clients = []
 isFirst = True
 
@@ -196,12 +198,12 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			for thread in threads:
 				thread.stop = True
 			args = ()
+			target = stream_tweets
 			if (data['details']['mode'] == 'file'):
 				args=('file', data['details']['file'], directory)
-
-			print "ATTEMPTING SWITCH"
-			print args
-
+			elif (data['details']['mode'] == 'bound'):
+				args = (data['details']['file'], directory)
+				target = newsflash.compute_bounds
 			t = threading.Thread(target=stream_tweets, args=args)
 			threading.Thread.stop = False
 			t.stop = False
