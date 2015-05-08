@@ -8,7 +8,7 @@ import re
 
 
 
-app = Flask(__name__, template_folder="../templates/")
+app = Flask(__name__, template_folder="../templates/", static_folder="../static")
 socketio = SocketIO(app)
 
 @app.route("/realtime")

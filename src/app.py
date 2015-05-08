@@ -14,7 +14,7 @@ import re
 import os
 import argparse
 
-import newsflash
+import newsflash_algo as nf
 
 clients = []
 isFirst = True
@@ -93,7 +93,7 @@ def retrieve_tweets(source, mode):
 				client.write_message(json.dumps({'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}))
 
 def get_bounds(data_file, directory):
-	results = newsflash.compute_bounds(directory+data_file)
+	results = nf.compute_bounds(directory+data_file)
 	print results
 
 def stream_tweets(mode='live', data_file=None, data_dir=None):
