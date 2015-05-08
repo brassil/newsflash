@@ -144,7 +144,6 @@ def run_newsflash(nf_pickle_file):
     it puts the tweets into the newsflash object and calculates rankings
     '''
     nf = pickle.load(file(nf_pickle_file))
-    tokenizer = Tokenizer()
 
     print 'Newsflash pickle object successfully loaded'
 
@@ -163,7 +162,7 @@ def run_newsflash(nf_pickle_file):
             sys.stdout.write(' Parsing tweet %d    \r' % (update))
             sys.stdout.flush()
 
-            nf.last_tweet = parse_tweet(nf, tokenizer, tweets_info[0])
+            nf.last_tweet = parse_tweet(nf, tweets_info[0])
             if tweets_info[1] is not None:
                 # if it's a retweet, add the original tweet, but DON'T
                 # upddate "last tweet" bc it's obv gonna be older
@@ -173,7 +172,10 @@ def run_newsflash(nf_pickle_file):
         if update == 50:
             sys.stdout.write('Recomputing rankings\n')
             update = 0
-            compute_rankings(nf)
+            rankings = compute_rankings(nf, True)
+            for term in rankings[:20]:
+                rank = nf.ranks[term]
+                print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size) 
             sys.stdout.write('\n')
 
 

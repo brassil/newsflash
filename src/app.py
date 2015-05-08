@@ -15,6 +15,7 @@ import os
 import argparse
 
 import newsflash as nf
+from fetch_tweets import parse_streaming_tweet
 
 clients = []
 isFirst = True
@@ -82,15 +83,67 @@ def retrieve_tweets(source, mode):
 			break
 		tweets_info = None
 		if (mode == 'live'):
-			tweets_info = parse_tweet(tweet)
+			tweets_info = parse_streaming_tweet(tweet)
 		if (mode == 'file'):
 			tweets_info = [tweet]
 
 		if tweets_info is not None:
-			print {'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}
+			print {'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 
+					'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 
+					'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}
 			if mode == 'file':time.sleep(2)
 			for client in clients:
-				client.write_message(json.dumps({'type' : 'tweet', 'tweet' : {'latitude' : tweets_info[0][5], 'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}))
+				client.write_message(json.dumps({'type' : 'tweet', 
+					'tweet' : {'latitude' : tweets_info[0][5], 
+					'longitude' : tweets_info[0][6], 'tweet' : tweets_info[0][7], 
+					'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}))
+
+
+
+
+def retreive_tweets_with_newsflash(nf_obj, source, update):
+	thread = threading.current_thread()
+	count = 0
+
+	for tweet in source:
+		if thread.stop:
+			threads.remove(thread)
+			break
+		
+		# NOTE THAT THIS IGNORES THE ORIGINAL TWEET
+		# IN THE CASE OF RETWEETS. this is okay, for now.
+		t = parse_streaming_tweet(tweet)[0]
+
+		if t is not None:
+			count += 1
+			sys.stdout.write(' Parsing tweet %d    \r' % (update))
+			sys.stdout.flush()
+
+			tweet_json = json.dumps({'type' : 'tweet', 
+				'tweet' : {'latitude' : t[5], 
+				'longitude' : t[6], 'tweet' : t[7], 
+				'time' : t[1], 'location': t[4]}})
+
+			# now add it to the Newsflash object
+			nf.parse_tweet(nf_obj, t)
+
+			for client in clients:
+				client.write_message(tweet_json)
+
+			if count == update:
+				sys.stdout.write('Recomputing rankings\n')
+				count = 0
+				rankings = nf.compute_rankings(nf_obj, True)
+				for term in rankings[:20]:
+				    rank = nf_obj.ranks[term]
+				    info = (term, rank.freq, rank.dfreq, rank.box_size)
+				    sys.stdout.write('%s (%d, %f)\t%f\n' % info) 
+				sys.stdout.write('\n')
+
+
+
+
+
 
 def analyze_file(data_file, directory):
 	nf_obj = nf.train_nf(directory+data_file)
@@ -100,14 +153,17 @@ def analyze_file(data_file, directory):
 	for term_ind in range(0,len(top_20_terms)):
 		term = top_20_terms[term_ind]
 		rank = nf_obj.ranks[term]
-		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 'boxes' : top_20_boxes[term_ind], 'tweets' : nf.get_tweets_by_term(nf_obj, term)})
+		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 
+			'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 
+			'boxes' : top_20_boxes[term_ind], 
+			'tweets' : nf.get_tweets_by_term(nf_obj, term)})
 	top_10_links = list(reversed(sorted(nf_obj.urls, key=lambda x: len(nf_obj.urls[x]))))[:10]
 	link_data = {'type' : 'top_links', 'links' : [link for link in top_10_links]}
 	for client in clients:
 		print stat_data
 		print link_data
-		client.write_message(json.dumps(stat_data));
-		client.write_message(json.dumps(link_data));
+		client.write_message(json.dumps(stat_data))
+		client.write_message(json.dumps(link_data))
 
 
 def stream_tweets(mode='live', data_file=None, data_dir=None):
@@ -134,58 +190,40 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 		retrieve_tweets(source, mode)
 
 	#if the thread has been started with the FILE mode specified
-	elif (mode == 'file' and data_file != None):
+	elif (mode == 'file'):
+		if data_file is None: sys.exit('ERROR: data file is None')
+
 		print "--- SWITCHING TO FILE MODE ---"
 		with open(data_dir+data_file, 'r') as tweet_file:
 			source = csv.reader(tweet_file)
 			next(source, None)
 			retrieve_tweets(source, mode)
+
+	elif (mode == 'newsflash'):
+		print "--- SWITCHING TO LIVE MODE WITH NEWSFLASH OBJECT DATA ---"
+		if data_file is None: sys.exit('ERROR: data file is None')
+		
+		print "Training Newsflash object"
+		nf_obj = nf.train_nf(data_dir+data_file)
+		
+		print "Calculating preliminary rankings"
+		ranked_terms = nf.compute_rankings(nf)
+		
+		# could print top 20 here etc. but don't need to
+		
+		print "Begin streaming live data"
+		source = twitterreq((url+add), 'GET', [])
+
+		retreive_tweets_with_newsflash()
+
+
 	else:
 		print "ERROR: invalid mode requested!"
 
 
-def parse_tweet(t):
-	# don't freak out if JSON conversion fails
-	try: t = json.loads(t)
-	except: return None
-
-	# don't use if it's not a tweet
-	if 'text' not in t.keys(): return None
-
-	# don't use if it doesn't have location
-	if t['coordinates'] is None: return None
-
-	# include place if it's available
-	if t['place'] is None: place = ''
-	else: place = t['place']['full_name'].encode('utf-8')
-
-	# get all the shet
-	lng,lat = t['coordinates']['coordinates']
-	date = t['created_at'].encode('utf-8')
-	tweet_id = t['id_str'].encode('utf-8')
-	user_id = t['user']['id_str'].encode('utf-8')
-	followers = t['user']['followers_count']
-	text = t['text'].encode('utf-8')
-	source = re.split('>|<',t['source'].encode('utf-8'))[2]
-
-
-	# get entity information
-	hashtags = t['entities']['hashtags']
-	urls = [url['expanded_url'].encode('utf-8') for url in t['entities']['urls']]
-
-	# add the retweeted tweet if this is a retweet
-	original = None
-	retweet_id = ''
-	if 'retweeted_status' in t.keys():
-		# this tweet is a retweet
-		retweet_id = t['retweeted_status']['id_str'].encode('utf-8')
-		original = parse_tweet(t['retweeted_status'])
-
-	return [tweet_id,date,user_id,followers,place,lat,lng,text,source,hashtags,urls,retweet_id], original
-
 
 '''
-ASYNCHRONYS POLLING
+ASYNCHRONOUS POLLING
 '''
 
 class WSHandler(tornado.websocket.WebSocketHandler):
@@ -199,7 +237,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		global clients
 		global directory
 		print 'new connection'
-		self.write_message(json.dumps({'type' : 'files', 'files' : os.listdir(directory)}))
+		self.write_message(json.dumps({'type' : 'files', 
+			'files' : os.listdir(directory)}))
 		clients.append(self)
 		if isFirst:
 			t = threading.Thread(target=stream_tweets)
