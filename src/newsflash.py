@@ -64,35 +64,44 @@ def remove_old(nf):
 	'''
 	remove all tweets older than X days?
 	'''
-	pass
+	about_a_week_ago = nf.tweets[nf.last_tweet].time - 604800
+
+	for tid in sorted(nf.tweets, key=lambda t: nf.tweets[t].time):
+		if nf.tweets[tid].time < about_a_week_ago:
+			# remove tweet ID from all inverse indices 
+			for w in nf.tweets[tid].words:
+				nf.terms[w].remove(tid)
+
+			nf.tweets.pop(tid) # remove tweet entirely
+
+
+	# NOT SURE IF WE SHOULD DO THIS NOW, it depends how often
+	# we call remove_old and compute_rankings
+	compute_rankings(nf) # recompute rankings now
+
+
 
 
 
 def get_tweets_by_term(nf, term):
 	'''
-	returns a 2-tuple with the following two elements:
+	returns a 2-tuple (box, tweets):
 	- box = bounding box for this term. box is a list of 2-tuples, where each
 			2-tuple is (lat,lon) for the SW, NW, NE, and SE corners (in that
 			order, s.t. the list has length 4)
-	- tweets = list of tweets containing term. Each element in the list is a
-			   2-tuple, with elements (location, text). location itself is a 
-			   2-tuple (lat,lon); text is a str with the text of the tweet.
+	- tweets = list of tweets containing this term. Each element in the list is
+			a 2-tuple, with elements (location, text). location itself is a
+			2-tuple of floats (lat,lon); text is a str with the text of 
+			the tweet.
 	'''
 
 	if len(nf.ranks) == 0:
 		e = 'ERROR - rankings have not been calculated yet'
 		sys.stderr.write(e+'\n')
-		return [e]
+		return [e,[]] # idk just something in a similar format
 
-	# nf.ranks[term] = (freq, dfreq, box, box_size, corners)
-	box = get_corners(nf.ranks[term].box)
-	tweets = []
-	for tid in nf.terms[term]:
-		tweets.append(nf.tweets[tid].loc, nf.tweets[tid].text)
-
-	return (box, tweets)
-
-
+	return (get_corners(nf.ranks[term].box), [((nf.tweets[tid].loc, 
+				nf.tweets[tid].text) for tid in nf.terms[term])])
 
 
 def find_related_tweets(nf, terms):
