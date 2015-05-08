@@ -1,4 +1,0 @@
-tweet_id,date,user_id,followers,place,lat,lng,text,source,hashtags,urls,retweet_id
-593816625205399554,Thu Apr 30 16:38:10 +0000 2015,729893354,462,"Queens, NY",40.756152,-73.942231,@PhototechNYC Absolutely did and thank you for the kind words!,Twitter for iPhone,[],[],
-593816628619411456,Thu Apr 30 16:38:11 +0000 2015,505161331,166,"Bronx, NY",40.871853,-73.879958,"That moment when your wifi is off so the only way to fap is through your personal spank bank, but then you get sad :(",Twitter for iPhone,[],[],
-593816629785534465,Thu Apr 30 16:38:11 +0000 2015,261999255,173,"Manhattan, NY",40.786585,-73.975401,"God is great, and so are biscuits. @ Jacob's Pickles https://t.co/JReKl2nka2",Instagram,[],['https://instagram.com/p/2GyZ19tW3N/'],
