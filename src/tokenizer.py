@@ -79,6 +79,8 @@ class Tokenizer:
 			if not w[0].isalpha(): continue # ignore words that don't start with alphabet
 			if w in stopwords: continue # ignore stopwords
 
+			if w=='URL' or w=='AT_USER': continue # ignore these for now
+
 			words.add(w)
 
 

@@ -7,6 +7,7 @@ import numpy as np
 import csv
 from collections import defaultdict
 import pickle
+from ast import literal_eval
 
 from tokenizer import Tokenizer
 from seconds import seconds
@@ -32,6 +33,9 @@ class Newsflash:
 
 		self.first_tweet = None
 		self.last_tweet = None
+
+
+		self.urls = defaultdict(list)
 
 
 class Tweet:
@@ -64,9 +68,9 @@ def remove_old(nf):
 	'''
 	remove all tweets older than X days?
 	'''
-	about_a_week_ago = nf.tweets[nf.last_tweet].time - 604800
+	about_a_week_ago = nf.tweets[nf.last_tweet].time - 86400*7
 
-	for tid in sorted(nf.tweets, key=lambda t: nf.tweets[t].time):
+	for tid in nf.tweets:
 		if nf.tweets[tid].time < about_a_week_ago:
 			# remove tweet ID from all inverse indices 
 			for w in nf.tweets[tid].words:
@@ -74,6 +78,8 @@ def remove_old(nf):
 
 			nf.tweets.pop(tid) # remove tweet entirely
 
+	# update what the oldest tweet in teh collection is
+	nf.first_tweet = min(nf.tweets, key=lambda tid: nf.tweets[tid].time)
 
 	# NOT SURE IF WE SHOULD DO THIS NOW, it depends how often
 	# we call remove_old and compute_rankings
@@ -100,18 +106,51 @@ def get_tweets_by_term(nf, term):
 		sys.stderr.write(e+'\n')
 		return [e,[]] # idk just something in a similar format
 
-	return (get_corners(nf.ranks[term].box), [((nf.tweets[tid].loc, 
-				nf.tweets[tid].text) for tid in nf.terms[term])])
+	return (get_corners(nf.ranks[term].box), [(nf.tweets[tid].loc, 
+				nf.tweets[tid].text) for tid in nf.terms[term]])
 
 
-def find_related_tweets(nf, terms):
+
+
+
+
+def find_related_tweets(nf, start_terms):
 	'''
 	takes in the top n terms and tries to find groups of related tweets
 	at first we're using 100 but this can be changed
-	'''
-	level = 10 # go 10 deep before we stop
 
-	explored_tweets = []
+	YO THIS DOESN'T WORK. after only 3 iterations we've captured almost
+	all the terms (i.e. most tweets have <3 degrees of separation)
+	'''
+	terms = set()
+	tweets = set()
+
+
+	new_terms = set(start_terms)
+	new_tweets = set()
+
+
+	for level in range(3):
+		for term in new_terms:
+			new_tweets = new_tweets.union(nf.terms[term])
+
+		# only lookup terms in tweets we haven't already looked up
+		new_tweets = new_tweets.difference(tweets)
+		terms = terms.union(new_terms)
+		new_terms = set()
+
+		for tid in new_tweets:
+			new_terms = new_terms.union(nf.tweets[tid].words)
+
+		tweets = tweets.union(new_tweets)
+		new_tweets = set()
+
+	return terms
+
+
+		
+
+
 
 
 
@@ -129,6 +168,10 @@ def parse_tweet(nf, tokenizer, t):
 
 	words = tokenizer.tokenize(t[7])
 	for word in words: nf.terms[word].append(tid) # add to inverse index
+
+	# add URLs
+	for url in literal_eval(t[10]):
+		nf.urls[url].append(tid)
 
 	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), words, t[7])
 
@@ -170,7 +213,7 @@ def compute_rankings(nf):
 	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
 	sorted_rankings = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
 
-	find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
+	# find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
 
 	# code for the visual bounding box animation
 	top_20 = sorted_rankings[:20]
@@ -179,6 +222,11 @@ def compute_rankings(nf):
 		rank = nf.ranks[term]
 		top_corners.append(rank.corners)
 		print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
+
+
+	print '\nTOP 10 links'
+	for url in list(reversed(sorted(nf.urls, key=lambda x: len(nf.urls[x]))))[:10]:
+		print '%d \t %s' % (len(nf.urls[url]), url)
 
 	return (top_20, top_corners)
 
