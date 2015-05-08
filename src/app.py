@@ -100,7 +100,7 @@ def analyze_file(data_file, directory):
 	for term_ind in range(0,len(top_20_terms)):
 		term = top_20_terms[term_ind]
 		rank = nf_obj.ranks[term]
-		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 'boxes' : top_20_boxes[term_ind]})
+		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 'boxes' : top_20_boxes[term_ind], 'tweets' : nf.get_tweets_by_term(nf_obj, term)})
 	top_10_links = list(reversed(sorted(nf_obj.urls, key=lambda x: len(nf_obj.urls[x]))))[:10]
 	link_data = {'type' : 'top_links', 'links' : [link for link in top_10_links]}
 	for client in clients:
