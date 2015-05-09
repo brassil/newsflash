@@ -453,7 +453,8 @@
 					.style('fill', flat_ui[1])
 					.style('opacity', '0')
 					.on('mouseover', showTweet)
-					.on('mouseout', removeTweet);
+					.on('mouseout', removeTweet)
+					.on('click', showTweet);
 				if(fade){
 					point.transition()
 					.duration(1250)
@@ -539,7 +540,7 @@
 					}
 				//TWEET MESSAGE
 				}else if(data.type == 'tweet'){
-					$('#tweet_live').html('<p>'+data.tweet.tweet+'</p>');
+					$('#tweet_live').html('<p>'+data.tweet.text+'</p>');
 					new_tweet(data.tweet.latitude, data.tweet.longitude, true, data.tweet.tid);
 				//TOP_TERMS MESSAGE
 				}else if(data.type == 'top_terms'){
