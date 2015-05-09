@@ -273,7 +273,7 @@
 			}
 			
 			.selected{
-				background-color: #bfe4ff !important;
+				background-color: #91b5ce !important;
 			}
 			
 			.tweet_text_inner{
@@ -413,6 +413,7 @@
 
 			
 		d3.json("static/nyc.json", function(error, nyc) {
+			console.log(nyc);
 			if (error) return console.error(error);
 			var svg = d3.select("#map").append("svg")
 			    .attr("width", width)
@@ -443,12 +444,12 @@
 			
 			
 
-			function new_tweet(lat, longitude, fade, id){
+			function new_tweet(lat, longitude, fade, tid){
 				var point = svg.append("path")
 					.datum({type: "MultiPoint", coordinates: [{'0' : String(longitude), '1' : String(lat)}]})
 					.attr("class", "points")
 					.attr("d", path)
-					.attr('tweet_id', id)
+					.attr('tweet_id', tid)
 					.style('fill', flat_ui[1])
 					.style('opacity', '0')
 					.on('mouseover', showTweet)
@@ -539,7 +540,7 @@
 				//TWEET MESSAGE
 				}else if(data.type == 'tweet'){
 					$('#tweet_live').html('<p>'+data.tweet.tweet+'</p>');
-					new_tweet(data.tweet.latitude, data.tweet.longitude, true);
+					new_tweet(data.tweet.latitude, data.tweet.longitude, true, data.tweet.tid);
 				//TOP_TERMS MESSAGE
 				}else if(data.type == 'top_terms'){
 					console.log(data.terms);
@@ -564,7 +565,6 @@
 						$('#load_hold').fadeOut();
 					}
 				}else if(data.type == 'tweet_text'){
-					console.log(data['tweet_text']);
 					$('#tweet_hover').html('<p>'+data['tweet_text']+'</p>').addClass('slide_in');
 				}
 			};
@@ -615,8 +615,6 @@
 			$('#stream').click(function(){
 				$('#file_select').removeClass('pu_show');
 				event.stopPropagation();
-				var	data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
-				
 				var data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
 				if($('#bound').attr('select')=='yes'){
 					data.details.mode = 'bound';
@@ -625,7 +623,6 @@
 			});
 			
 			$('#live').click(function(){
-				console.log('here');
 				var data = {type : 'mode_change', details: {mode : 'live'}};
 				ws.send(JSON.stringify(data));
 			});

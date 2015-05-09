@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"New_York_City":{"type":"GeometryCollection","properties":{"kind":"state","state":"NY"},"geometries":[{"type":"Polygon","arcs":[[0]]}]}},"arcs":[[[8995,9728],[1004,-4052],[-4502,-2976],[-5497,-2700],[0,1352],[3497,4324],[4502,4323],[996,-271]]],"transform":{"scale":[0.000010951095109512077,0.000020262026202620653],"translate":[-74.0229,40.6808]}}
