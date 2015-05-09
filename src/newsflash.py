@@ -152,11 +152,12 @@ def parse_tweet(nf, t, from_file=False):
 	'''
 	tid = t[0]
 
-	words = nf.tokenizer.tokenize(t[7])
-	for word in words: nf.terms[word].append(tid) # add to inverse index
+	# words = nf.tokenizer.tokenize(t[7])
+	for word in nf.tokenizer.tokenize(t[7]):
+		nf.terms[word].append(tid) # add to inverse index
 
 	# add URLs
-	for url in (t[10] if type(t[10])==list else literal_eval(t[10])):
+	for url in (literal_eval(t[10]) if from_file else t[10]):
 		nf.urls[url.lower()].append(tid) # ignore case
 
 	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), t[7])
@@ -231,7 +232,6 @@ def get_top_x_terms(sorted_terms, x, nf):
 
 def train_nf(tweet_data_file, pickle_file=None):
 	nf = Newsflash()
-
 	# initialize things -- later we will read from tweets in real 
 	# time but rn it's a static file
 	with open(tweet_data_file) as f:
@@ -239,11 +239,14 @@ def train_nf(tweet_data_file, pickle_file=None):
 		next(r, None) # eliminate header row
 
 		# need to catch first tweet for its timestamp
-		nf.first_tweet = parse_tweet(nf, next(r, None))
+		nf.first_tweet = parse_tweet(nf, next(r, None), True)
 
+		t = time.time()
 
-		for row in r: nf.last_tweet = parse_tweet(nf, row)
+		for row in r: nf.last_tweet = parse_tweet(nf, row, True)
 	
+	print 'train time = %f' % (time.time() - t)
+
 	if pickle_file:
 		pickle.dump(nf, file(pickle_file, 'w'))
 	
@@ -253,6 +256,7 @@ def train_nf(tweet_data_file, pickle_file=None):
 
 def main(tweet_data_file, pickle_file=None):
 	nf = train_nf(tweet_data_file, pickle_file)
+
 	sorted_terms = compute_rankings(nf)
 	top_20_terms, top_20_boxes = get_top_x_terms(sorted_terms, 20, nf)
 	for term in top_20_terms:
