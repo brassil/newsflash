@@ -1,10 +1,14 @@
 import math
 
-# bounding box for continental US
-SW = (24.9493, -125.0011)
-NE = (49.5904, -66.9326)
-
 R = 3959 # radius of earth, in miles
+
+# bounding box for continental US
+# SW = (24.9493, -125.0011)
+# NE = (49.5904, -66.9326)
+
+# bounding box for manhattan (same as API call)
+SW = (40.63, -74.12)
+NE = (40.94, -73.68)
 
 
 def get_corners(box):
@@ -13,8 +17,14 @@ def get_corners(box):
 	and returns the 4 corners as a list (each corner is a duple)
 	in the order SW, NW, NE, SE
 	'''
-	return [(box[0][0],box[1][0]),(box[0][1],box[1][0]),(box[0][1],box[1][1]),(box[0][0],box[1][1])]
+	return [(box[0][0],box[1][0]),(box[0][1],box[1][0]),
+			(box[0][1],box[1][1]),(box[0][0],box[1][1])]
 
+
+def inside_box(p,box):
+	if p[0] < box[0][0] or p[0] > box[0][1]: return False
+	if p[1] < box[1][0] or p[1] > box[0][1]: return False
+	return True
 
 def trending_location(points):
 	'''
@@ -44,7 +54,11 @@ def trending_location(points):
 	end = False
 
 	# get rid of this eventually, we only need it for intermediate bounding box visualization
-	corners = []
+	corners = [p for p in points if inside_box(p,box)]
+
+
+	# ignore points not contained in the original bounding box
+
 
 
 	# only run while the bounding box is > 1 square mile
