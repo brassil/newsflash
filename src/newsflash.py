@@ -42,10 +42,10 @@ class Newsflash:
 
 
 class Tweet:
-	def __init__(self, time, loc, words, text):
+	def __init__(self, time, loc, text): # words
 		self.time = time # float (I think), Unix time, seconds
 		self.loc = loc # 2-tuple (lat,lon), each is a float
-		self.words = words # set of tokenized terms in the tweet
+		# self.words = words # set of tokenized terms in the tweet
 		self.text = text # raw text of the tweet
 
 
@@ -69,14 +69,14 @@ class Rank:
 
 def remove_old(nf):
 	'''
-	remove all tweets older than X days?
+	remove all tweets older than X days
 	'''
 	about_a_week_ago = nf.tweets[nf.last_tweet].time - 86400*7
 
 	for tid in nf.tweets:
 		if nf.tweets[tid].time < about_a_week_ago:
-			# remove tweet ID from all inverse indices 
-			for w in nf.tweets[tid].words:
+			# remove tweet ID from all terms (inv index)
+			for w in nf.tokenizer.tokenize(nf.tweets[tid].text):
 				nf.terms[w].remove(tid)
 
 			nf.tweets.pop(tid) # remove tweet entirely
@@ -100,7 +100,7 @@ def get_tweets_by_term(nf, term):
 
 	return {'bounding_box' : get_corners(nf.ranks[term].box), 
 			'tweets' : [{'location' : nf.tweets[tid].loc, 
-			'tweet' : nf.tweets[tid].text} for tid in nf.terms[term]]}
+			'tid' : tid} for tid in nf.terms[term]]}
 
 
 
