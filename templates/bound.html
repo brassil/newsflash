@@ -404,9 +404,7 @@
 					.delay(5000);
 			}
 			
-			function showTweet(d){
-				console.log(d.attr('tweet_id'));
-			};
+			
 
 			function new_tweet(lat, longitude, fade, id){
 				var point = svg.append("path")
@@ -527,11 +525,19 @@
 					}else if(data.status == true){
 						$('#load_hold').fadeOut();
 					}
+				}else if(data.type == 'tweet_text'){
+					console.log(data['tweet_text']);
 				}
 			};
 			ws.onclose = function(evt) { console.log("Connection close"); };
 			ws.onopen = function(evt) { 
 				console.log('CONNECTION OPEN');
+			};
+			
+			function showTweet(d){
+				var id = $(this).attr('tweet_id');
+				var data = {'type' : 'get_tweet_text', 'tid' : id}
+				ws.send(JSON.stringify((data));
 			};
 			
 			$(document).on('click', '#term_stats > li', function(){
@@ -546,7 +552,6 @@
 					var data = $(this).data();
 					svg.selectAll('.points').remove();
 					for (var tweet=0; tweet<data.tweets.tweets.length; tweet++){
-						console.log(data.tweets.tweets[tweet]);
 						new_tweet(data.tweets.tweets[tweet].location[0], data.tweets.tweets[tweet].location[1], false, data.tweets.tweets[tweet].tid);
 					}
 					draw_box(data.tweets.bounding_box);

@@ -157,7 +157,7 @@ def parse_tweet(nf, t):
 	for url in (t[10] if type(t[10])==list else literal_eval(t[10])):
 		nf.urls[url.lower()].append(tid) # ignore case
 
-	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), words, t[7])
+	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), t[7])
 
 	return tid
 
