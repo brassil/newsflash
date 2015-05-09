@@ -41,7 +41,7 @@ signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 http_method = "GET"
 
 directory = "/"
-train_file = 'tweets_4d.txt'
+train_file = 'tweets_10k.txt'
 
 is_trained = False
 
@@ -106,14 +106,14 @@ def retrieve_tweets(source, mode):
 
 def stream_stats(nf_obj):
 	sorted_terms = nf_obj.sorted_terms
-	top_20_terms, top_20_boxes = nf.get_top_x_terms(sorted_terms, 20, nf_obj)
+	top_30_terms, top_30_boxes = nf.get_top_x_terms(sorted_terms, 30, nf_obj)
 	stat_data = {'type' : 'top_term_stats', 'stats' : []}
-	for term_ind in range(0,len(top_20_terms)):
-		term = top_20_terms[term_ind]
+	for term_ind in range(0,len(top_30_terms)):
+		term = top_30_terms[term_ind]
 		rank = nf_obj.ranks[term]
 		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 
 			'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 
-			'boxes' : top_20_boxes[term_ind], 
+			'boxes' : top_30_boxes[term_ind], 
 			'tweets' : nf.get_tweets_by_term(nf_obj, term)})
 	top_10_links = list(reversed(sorted(nf_obj.urls, key=lambda x: len(nf_obj.urls[x]))))[:10]
 	link_data = {'type' : 'top_links', 'links' : [link for link in top_10_links]}
@@ -211,7 +211,7 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 		if data_file is None: sys.exit('ERROR: data file is None')
 
 		print "--- SWITCHING TO FILE MODE ---"
-		with open(data_dir+data_file, 'r') as tweet_file:
+		with open(os.path.join(data_dir,data_file), 'r') as tweet_file:
 			source = csv.reader(tweet_file)
 			next(source, None)
 			retrieve_tweets(source, mode)
@@ -221,7 +221,7 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 		if data_file is None: sys.exit('ERROR: data file is None')
 		
 		print "Training Newsflash object"
-		nf_obj = nf.train_nf(data_dir+data_file)
+		nf_obj = nf.train_nf(os.path.join(data_dir,data_file))
 		print "Calculating preliminary rankings"
 		nf.compute_rankings(nf_obj)
 		is_trained = True

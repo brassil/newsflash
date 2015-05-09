@@ -25,18 +25,20 @@ stopwords = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
        'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will',
        'just', 'don', 'should', 'now']
 
+stopwords += ["it's", "it'll"]
+
 # include common ends that don't begin with http:// or www., e.g. short
 # links from Twitter, Vine, Youtube, and bitly.
 links = ['www.', 'http://', 'https://', '.com/', '.org/', '.net/', '.co/', '.ly/', '.be/', '.ms/']
-
 
 
 class Tokenizer:
 	def __init__(self):
 		self.stemmer = PorterStemmer()
 
-	def tokenize(self, tweet):
+	def tokenize(self, tweet, ngrams=False):
 		words = set()
+		ng = []
 
 		# fix the most common HTML escapes
 		tweet = tweet.replace('&quot;','').replace('&nbsp;',' ').replace('&amp;',' ')
@@ -66,13 +68,29 @@ class Tokenizer:
 			for i,x in enumerate(w):
 				if i < 2 or x != w[i-2] or x != w[i-1]: notrip += x
 
-			w = self.stemmer.stem(w, 0, len(w)-1) # apply stemming using Porter Stemmer
+			notrip = self.stemmer.stem(notrip, 0, len(notrip)-1) # apply stemming using Porter Stemmer
 
-			if not w[0].isalpha(): continue
+			if not notrip[0].isalpha(): continue
 			
-			words.add(w) # ignore words that don't start with alphabet
+			words.add(notrip) # ignore words that don't start with alphabet
 
-			
+			if ngrams: ng.append(notrip)
+
+
+		if ngrams:
+			for i in range(len(ng)-1):
+				words.add(ng[i]+' '+ng[i+1])
+
+
+
+		'''YO THIS DOESN'T WORK BUT I STOPPED WORKING ON IT'''
+		# if ngrams:
+		# 	for i in range(len(ng)-ngrams+1):
+		# 		ngram = ng[i]
+		# 		for j in range(1,ngrams+1):
+		# 			if j <= i:
+		# 				ngram += ' '+ng[i+j]
+		# 				words.add(ngram)
 
 
 		return words

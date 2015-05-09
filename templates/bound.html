@@ -484,11 +484,7 @@
 					]
 				});
 				
-				d3.selectAll('.arc').remove();
-				// arcGroup.remove();
-				// arcGroup = g.append('g');
-				
-				console.log('making box');
+				svg.selectAll('.arc').remove();
 				var pathArcs = svg.selectAll('.arc')
 					.data(lines)
 					.enter()
@@ -604,13 +600,12 @@
 					}
 					draw_box(data.tweets.bounding_box);
 
-
 					if(d3.event != null){
 						reset_view();
 					}
 				}
 			});
-			
+
 			$('#analyze').click(function(){
 
 				$('#file_select').removeClass('pu_show');

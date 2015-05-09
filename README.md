@@ -37,3 +37,9 @@ need to have a sort of "significance" metric for a given term. It must be weight
 
 
 __problem with the geography clustering thing we do:__ what if the big cluster is right in the middle? then it's not going to come up as significant
+
+
+# maps
+
+[printing multiple maps](http://blog.webkid.io/multiple-maps-d3/)
+

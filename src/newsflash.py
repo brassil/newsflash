@@ -152,7 +152,7 @@ def parse_tweet(nf, t, from_file=False):
 	tid = t[0]
 
 	# words = nf.tokenizer.tokenize(t[7])
-	for word in nf.tokenizer.tokenize(t[7]):
+	for word in nf.tokenizer.tokenize(t[7], True): #=================================== BIGRAMS INCLUDED
 		nf.terms[word].append(tid) # add to inverse index
 
 	# add URLs
