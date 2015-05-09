@@ -35,25 +35,17 @@ class Tokenizer:
 	def __init__(self):
 		self.stemmer = PorterStemmer()
 
-
-	def special_case(self, w):
-		for s in links:
-			if s in w: return 'URL'
-
-		if w.startswith('@'): return 'AT_USER'
-
-		return w
-
 	def reduce_char(self, w):
 		'''
 		replace two or more occurrences of the same char (in a row)
 		with two occurrences
 		'''
-		if len(w) <= 2: return w
+		r = ''
+		for i,x in enumerate(w):
+			if i < 2 or x != w[i-2] or x != w[i-1]: r += x
 
-		dup = [i for i in range(2,len(w)) if w[i]==w[i-1] and w[i]==w[i-2]]
-		return ''.join(w[i] for i in range(len(w)) if i not in dup)
-
+		return r
+		# return re.sub(r'(.)\1+', r'\1\1', w)	
 
 
 	def tokenize(self, tweet):
@@ -70,18 +62,30 @@ class Tokenizer:
 
 		for w in tweet.split():
 			w = w.lower() # convert to lowercase
-			w = self.special_case(w) # convert all urls and user tags to the same thing
+			
+			# get rid of links and user mentions
+			for s in links:
+				if s in w: continue
+			if w.startswith('@'): continue
+
 			w = w.strip(punct) # strip punctuation (including hashtag)
-			w = self.reduce_char(w) # replace two or more occurrence of same char with two
+
+			if w in stopwords: continue # ignore stopwords
+			
+			# replace two or more occurrence of same char with two
+			notrip = '' 
+			for i,x in enumerate(w):
+				if i < 2 or x != w[i-2] or x != w[i-1]: notrip += x
+
 			w = self.stemmer.stem(w, 0, len(w)-1) # apply stemming using Porter Stemmer
 
-			if len(w) == 0: continue # ignore now-blank words
-			if not w[0].isalpha(): continue # ignore words that don't start with alphabet
-			if w in stopwords: continue # ignore stopwords
+			if len(w) == 0: continue  # ignore now-blank words
 
-			if w=='URL' or w=='AT_USER': continue # ignore these for now
+			if not w[0].isalpha(): continue
+			
+			words.add(w) # ignore words that don't start with alphabet
 
-			words.add(w)
+			
 
 
 		return words
