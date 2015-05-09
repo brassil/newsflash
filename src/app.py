@@ -142,7 +142,8 @@ def retreive_tweets_with_newsflash(nf_obj, source, update):
 
 			tweet_json = json.dumps({'type' : 'tweet', 
 				'tweet' : {'latitude' : t[5], 
-				'longitude' : t[6], 'tid': t[0]}})
+				'longitude' : t[6], 'tid': t[0],
+				'text' : t[7]}})
 
 			# now add it to the Newsflash object
 			nf.parse_tweet(nf_obj, t)
