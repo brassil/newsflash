@@ -182,7 +182,7 @@ def compute_rankings(nf):
 		freq = len(tweets)
 
 		# now calculate the increase / rate of increase of freq somehow.
-		# for now, I'll just compare freq in the last day to freq overall
+		# for now, I'll just compare freq in the last day to freq overall		
 		today_tweets = 0 # number of tweets w/ this term in the last 24h
 		for tid in tweets:
 			if end - nf.tweets[tid].time < 86400: today_tweets += 1 # seconds per day = 86,400
@@ -190,16 +190,15 @@ def compute_rankings(nf):
 		dfreq = today_tweets / (freq/window)
 
 		# now calculate the geography thing
-		all_points = [nf.tweets[tid].loc for tid in tweets]
-		box, box_size, num_points, corners = trending_location(all_points)
-		today_points_ratio = num_points / float(len(all_points))
-		
+		points = [nf.tweets[tid].loc for tid in tweets]
+		box, box_size, num_points, corners = trending_location(points, False) # make corners=true otherwise corners will be empty
+		today_points_ratio = num_points / float(len(points))
+
 		# note that not everything being returned by trending_location
 		# is actually given to Rank or even used.
 		nf.ranks[term] = Rank(freq, dfreq, box, box_size, corners)
 
-	# YO this whole section of code is p bloated and not great, but I'm just keeping
-	# it for now while I'm changing the format to classes.
+
 	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
 	nf.sorted_terms = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
 

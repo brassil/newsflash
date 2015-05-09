@@ -10,6 +10,9 @@ R = 3959 # radius of earth, in miles
 SW = (40.63, -74.12)
 NE = (40.94, -73.68)
 
+# format = [[latmin, latmax], [lngmin, lngmax]]
+box = [[SW[0], NE[0]], [SW[1], NE[1]]]
+
 
 def get_corners(box):
 	'''
@@ -26,7 +29,7 @@ def inside_box(p,box):
 	if p[1] < box[1][0] or p[1] > box[0][1]: return False
 	return True
 
-def trending_location(points):
+def trending_location(points, corners=False):
 	'''
 	ugh it's not gonna work bc what if a split happens through the middle
 	of the cluster? well, at least if we do the entire united states,
@@ -48,16 +51,14 @@ def trending_location(points):
 
 	also note that the extra corner that isn't used in the split will still happen
 	'''
-	# format = [[latmin, latmax], [lngmin, lngmax]]
-	box = [[SW[0], NE[0]], [SW[1], NE[1]]]
 	i = 1 # split on longitude first (0 is lat)
 	end = False
 
 	# get rid of this eventually, we only need it for intermediate bounding box visualization
-	corners = [p for p in points if inside_box(p,box)]
-
+	corners = []
 
 	# ignore points not contained in the original bounding box
+	points = [p for p in points if inside_box(p,box)]
 
 
 
@@ -65,7 +66,7 @@ def trending_location(points):
 	while (box[0][1]-box[0][0])*(box[1][1]-box[1][0]) > .0001:
 		# print the bounding box
 		# print [(box[0][0],box[1][0]),(box[0][1],box[1][1])]
-		corners.append(get_corners(box))
+		if corners: corners.append(get_corners(box))
 
 
 		mid = box[i][0] + (box[i][1] - box[i][0]) / 2 
