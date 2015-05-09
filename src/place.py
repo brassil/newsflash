@@ -10,6 +10,11 @@ R = 3959 # radius of earth, in miles
 SW = (40.63, -74.12)
 NE = (40.94, -73.68)
 
+
+# currently using a bounding box that's bigger than api but not much
+# SW = (39, -75)
+# NE = (42, -72)
+
 # format = [[latmin, latmax], [lngmin, lngmax]]
 
 
