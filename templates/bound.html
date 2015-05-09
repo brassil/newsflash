@@ -540,7 +540,7 @@
 					}
 				//TWEET MESSAGE
 				}else if(data.type == 'tweet'){
-					$('#tweet_live').html('<p>'+data.tweet.tweet+'</p>');
+					$('#tweet_live').html('<p>'+data.tweet.text+'</p>');
 					new_tweet(data.tweet.latitude, data.tweet.longitude, true, data.tweet.tid);
 				//TOP_TERMS MESSAGE
 				}else if(data.type == 'top_terms'){
