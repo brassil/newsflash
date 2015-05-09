@@ -256,7 +256,7 @@ def train_nf(tweet_data_file, pickle_file=None):
 
 def main(tweet_data_file, pickle_file=None):
 	nf = train_nf(tweet_data_file, pickle_file)
-	
+
 	sorted_terms = compute_rankings(nf)
 	top_20_terms, top_20_boxes = get_top_x_terms(sorted_terms, 20, nf)
 	for term in top_20_terms:

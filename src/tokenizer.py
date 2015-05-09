@@ -35,19 +35,6 @@ class Tokenizer:
 	def __init__(self):
 		self.stemmer = PorterStemmer()
 
-	def reduce_char(self, w):
-		'''
-		replace two or more occurrences of the same char (in a row)
-		with two occurrences
-		'''
-		r = ''
-		for i,x in enumerate(w):
-			if i < 2 or x != w[i-2] or x != w[i-1]: r += x
-
-		return r
-		# return re.sub(r'(.)\1+', r'\1\1', w)	
-
-
 	def tokenize(self, tweet):
 		words = set()
 
@@ -70,6 +57,8 @@ class Tokenizer:
 
 			w = w.strip(punct) # strip punctuation (including hashtag)
 
+			if len(w) == 0: continue  # ignore now-blank words
+
 			if w in stopwords: continue # ignore stopwords
 			
 			# replace two or more occurrence of same char with two
@@ -78,8 +67,6 @@ class Tokenizer:
 				if i < 2 or x != w[i-2] or x != w[i-1]: notrip += x
 
 			w = self.stemmer.stem(w, 0, len(w)-1) # apply stemming using Porter Stemmer
-
-			if len(w) == 0: continue  # ignore now-blank words
 
 			if not w[0].isalpha(): continue
 			
