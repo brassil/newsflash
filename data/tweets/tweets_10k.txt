@@ -1,3 +1,4 @@
+tweet_id,date,user_id,followers,place,lat,lng,text,source,hashtags,urls,retweet_id
 593762616687915009,Thu Apr 30 13:03:34 +0000 2015,3019078097,45,"Queens, NY",40.645751,-73.773488,"Peace out shade, bae and I have had it, we outta here!
 
 #yolicotray #socrateshoward #artist #singer… https://t.co/GKqxHo9WVe",Instagram,"[{u'indices': [56, 67], u'text': u'yolicotray'}, {u'indices': [68, 83], u'text': u'socrateshoward'}, {u'indices': [84, 91], u'text': u'artist'}, {u'indices': [92, 99], u'text': u'singer'}]",['https://instagram.com/p/2GZ10DmfML/'],
