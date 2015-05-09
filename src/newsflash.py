@@ -153,6 +153,7 @@ def parse_tweet(nf, t):
 	for word in words: nf.terms[word].append(tid) # add to inverse index
 
 	# add URLs
+	print t
 	for url in literal_eval(t[10]):
 		nf.urls[url.lower()].append(tid) # ignore case
 

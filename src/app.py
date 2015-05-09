@@ -41,6 +41,7 @@ signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 http_method = "GET"
 
 directory = "/"
+start_file = None
 
 threads = []
 
@@ -112,9 +113,10 @@ def retreive_tweets_with_newsflash(nf_obj, source, update):
 		
 		# NOTE THAT THIS IGNORES THE ORIGINAL TWEET
 		# IN THE CASE OF RETWEETS. this is okay, for now.
-		t = parse_streaming_tweet(tweet)[0]
+		t = parse_streaming_tweet(tweet)
 
 		if t is not None:
+			t = t[0]
 			count += 1
 			sys.stdout.write(' Parsing tweet %d    \r' % (update))
 			sys.stdout.flush()
@@ -207,14 +209,14 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 		nf_obj = nf.train_nf(data_dir+data_file)
 		
 		print "Calculating preliminary rankings"
-		ranked_terms = nf.compute_rankings(nf)
+		ranked_terms = nf.compute_rankings(nf_obj)
 		
 		# could print top 20 here etc. but don't need to
 		
 		print "Begin streaming live data"
 		source = twitterreq((url+add), 'GET', [])
 
-		retreive_tweets_with_newsflash()
+		retreive_tweets_with_newsflash(nf_obj, source, 50)
 
 
 	else:
@@ -240,13 +242,15 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		self.write_message(json.dumps({'type' : 'files', 
 			'files' : os.listdir(directory)}))
 		clients.append(self)
+		'''
 		if isFirst:
-			t = threading.Thread(target=stream_tweets)
+			t = threading.Thread(target=stream_tweets, args = ('newsflash', 'tweets.txt', directory))
 			threading.Thread.stop = False
 			t.start()
 			t.stop = False
 			threads.append(t)
 			self.isFirst = False
+		'''
 	
 	def on_message(self, message):
 		global directory
@@ -287,6 +291,11 @@ if __name__ == "__main__":
 	http_server = tornado.httpserver.HTTPServer(application)
 	http_server.listen(8888)
 	try:
+		t = threading.Thread(target=stream_tweets, args = ('newsflash', 'small_tweets.txt', directory))
+		threading.Thread.stop = False
+		t.start()
+		t.stop = False
+		threads.append(t)
 		tornado.ioloop.IOLoop.instance().start()
 	except KeyboardInterrupt:
 		for thread in threads:
