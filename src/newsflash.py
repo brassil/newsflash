@@ -8,6 +8,7 @@ import csv
 from collections import defaultdict
 import pickle
 from ast import literal_eval
+import time
 
 from tokenizer import Tokenizer
 from seconds import seconds
@@ -100,7 +101,8 @@ def get_tweets_by_term(nf, term):
 
 	return {'bounding_box' : get_corners(nf.ranks[term].box), 
 			'tweets' : [{'location' : nf.tweets[tid].loc, 
-			'tid' : tid} for tid in nf.terms[term]]}
+			'text' : nf.tweets[tid].text,
+			nf.tweets[tid]. 'tid' : tid} for tid in nf.terms[term]]}
 
 
 
@@ -143,7 +145,7 @@ def find_related_tweets(nf, start_terms):
 
 
 
-def parse_tweet(nf, t):
+def parse_tweet(nf, t, from_file=False):
 	'''
 	takes in the tweet as a string. I'm thinking that initializing
 	a new CSV reader for each tweet is prob inefficient but idk we'll see
@@ -238,6 +240,7 @@ def train_nf(tweet_data_file, pickle_file=None):
 
 		# need to catch first tweet for its timestamp
 		nf.first_tweet = parse_tweet(nf, next(r, None))
+
 
 		for row in r: nf.last_tweet = parse_tweet(nf, row)
 	
