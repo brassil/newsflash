@@ -11,7 +11,6 @@ SW = (40.63, -74.12)
 NE = (40.94, -73.68)
 
 # format = [[latmin, latmax], [lngmin, lngmax]]
-box = [[SW[0], NE[0]], [SW[1], NE[1]]]
 
 
 def get_corners(box):
@@ -51,6 +50,7 @@ def trending_location(points, corners=False):
 
 	also note that the extra corner that isn't used in the split will still happen
 	'''
+	box = [[SW[0], NE[0]], [SW[1], NE[1]]]
 	i = 1 # split on longitude first (0 is lat)
 	end = False
 

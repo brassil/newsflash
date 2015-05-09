@@ -178,6 +178,7 @@ def compute_rankings(nf):
 	end = nf.tweets[nf.last_tweet].time
 	window = (end-start)/86400 # seconds per day = 86,400
 
+	ranks = {}
 	print 'tweet collection window = %f days' % window
 
 	for term,tweets in nf.terms.items():
@@ -250,7 +251,7 @@ def train_nf(tweet_data_file, pickle_file=None):
 
 		for row in r: nf.last_tweet = parse_tweet(nf, row, True)
 	
-	print 'train time = %f' % (time.time() - t)
+	print 'train time: %.1fs' % (time.time() - t)
 
 	if pickle_file:
 		pickle.dump(nf, file(pickle_file, 'w'))

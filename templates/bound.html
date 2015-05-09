@@ -411,7 +411,6 @@
 			.scale(66000)
 			.translate([width / 2, height / 2]);
 
-			
 		d3.json("static/nyc.json", function(error, nyc) {
 			console.log(nyc);
 			if (error) return console.error(error);
@@ -432,7 +431,7 @@
 				.style('fill', nyc_map[3]);
 				
 			var g = svg.append("g");
-			var arcGroup = g.append('g');
+			// var arcGroup = svg.append('g');
 			
 
 			function fade_out(point){
@@ -463,7 +462,6 @@
 				}else{
 					point.style('opacity', '1');
 				}
-				
 			}
 			
 			
@@ -486,8 +484,12 @@
 					]
 				});
 				
-				arcGroup.selectAll('.arc').remove();	
-				var pathArcs = arcGroup.selectAll('.arc')
+				d3.selectAll('.arc').remove();
+				// arcGroup.remove();
+				// arcGroup = g.append('g');
+				
+				console.log('making box');
+				var pathArcs = svg.selectAll('.arc')
 					.data(lines)
 					.enter()
 					.append('path').attr({
@@ -503,6 +505,7 @@
 			}
 
 			var points = d3.selectAll('.points');
+			// var arcGroup = svg.selectAll('.arc');
 			
 			function move() {
 				var t = d3.event.translate,
@@ -513,7 +516,7 @@
 				
 				land.attr("transform", "translate(" + t + ")scale(" + s + ")");
 				points.attr("transform", "translate(" + t + ")scale(" + s + ")");
-				arcGroup.attr('transform', "translate(" + t + ")scale(" + s + ")");
+				svg.selectAll('.arc').attr('transform', "translate(" + t + ")scale(" + s + ")");
 			}
 			
 			function reset_view(){
@@ -521,7 +524,7 @@
 					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
 				svg.selectAll('.points').attr("transform","translate("+ 
 					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
-				arcGroup.selectAll('.arc').attr("transform","translate("+ 
+				svg.selectAll('.arc').attr("transform","translate("+ 
 					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
 			}
 			
@@ -595,10 +598,13 @@
 					$(this).addClass('selected');
 					var data = $(this).data();
 					svg.selectAll('.points').remove();
+
 					for (var tweet=0; tweet<data.tweets.tweets.length; tweet++){
 						new_tweet(data.tweets.tweets[tweet].location[0], data.tweets.tweets[tweet].location[1], false, data.tweets.tweets[tweet].tid);
 					}
 					draw_box(data.tweets.bounding_box);
+
+
 					if(d3.event != null){
 						reset_view();
 					}
