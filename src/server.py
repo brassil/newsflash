@@ -14,6 +14,10 @@ def map():
 def bound():
 	return render_template('bound.html',)
 
+@app.route("/world")
+def world():
+	return render_template('world.html',)
+
 
 
 if __name__ == "__main__":
