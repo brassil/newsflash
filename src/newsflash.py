@@ -31,6 +31,7 @@ class Newsflash:
 
 		self.ranks = {} # contains ranking tuple per term
 		self.tweets = {}
+		self.sorted_terms = None
 
 
 		self.first_tweet = None
@@ -170,7 +171,7 @@ If the return_sorted argument is passed as true, sort the rankings
 and return the terms for the rankings, in order
 Otherwise, return None
 '''
-def compute_rankings(nf, return_sorted=False):
+def compute_rankings(nf):
 	start = nf.tweets[nf.first_tweet].time
 	end = nf.tweets[nf.last_tweet].time
 	window = (end-start)/86400 # seconds per day = 86,400
@@ -197,16 +198,13 @@ def compute_rankings(nf, return_sorted=False):
 		# is actually given to Rank or even used.
 		nf.ranks[term] = Rank(freq, dfreq, box, box_size, corners)
 
-	if return_sorted:
-		# YO this whole section of code is p bloated and not great, but I'm just keeping
-		# it for now while I'm changing the format to classes.
-		sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
-		sorted_rankings = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
+	# YO this whole section of code is p bloated and not great, but I'm just keeping
+	# it for now while I'm changing the format to classes.
+	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
+	nf.sorted_terms = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
 
-		# find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
-		return sorted_rankings
-	else:
-		return None
+	# find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
+	return nf.sorted_terms
 
 
 def print_top_x_links(nf, x):
@@ -253,7 +251,7 @@ def train_nf(tweet_data_file, pickle_file=None):
 
 def main(tweet_data_file, pickle_file=None):
 	nf = train_nf(tweet_data_file, pickle_file)
-	sorted_terms = compute_rankings(nf, True)
+	sorted_terms = compute_rankings(nf)
 	top_20_terms, top_20_boxes = get_top_x_terms(sorted_terms, 20, nf)
 	for term in top_20_terms:
 		rank = nf.ranks[term]

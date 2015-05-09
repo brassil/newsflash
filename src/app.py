@@ -41,9 +41,13 @@ signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 http_method = "GET"
 
 directory = "/"
-start_file = None
+train_file = 'tweets.txt'
+
+is_trained = False
 
 threads = []
+
+nf_obj = None
 
 http_handler  = urllib.HTTPHandler(debuglevel=_debug)
 https_handler = urllib.HTTPSHandler(debuglevel=_debug)
@@ -100,12 +104,28 @@ def retrieve_tweets(source, mode):
 					'time' : tweets_info[0][1], 'location': tweets_info[0][4]}}))
 
 
+def stream_stats(nf_obj):
+	sorted_terms = nf_obj.sorted_terms
+	top_20_terms, top_20_boxes = nf.get_top_x_terms(sorted_terms, 20, nf_obj)
+	stat_data = {'type' : 'top_term_stats', 'stats' : []}
+	for term_ind in range(0,len(top_20_terms)):
+		term = top_20_terms[term_ind]
+		rank = nf_obj.ranks[term]
+		stat_data['stats'].append({'term' : term, 'freq' : rank.freq, 
+			'dfreq' : rank.dfreq, 'box_size' : rank.box_size, 
+			'boxes' : top_20_boxes[term_ind], 
+			'tweets' : nf.get_tweets_by_term(nf_obj, term)})
+	top_10_links = list(reversed(sorted(nf_obj.urls, key=lambda x: len(nf_obj.urls[x]))))[:10]
+	link_data = {'type' : 'top_links', 'links' : [link for link in top_10_links]}
+	for client in clients:
+		client.write_message(json.dumps(stat_data))
+		client.write_message(json.dumps(link_data))
 
 
 def retreive_tweets_with_newsflash(nf_obj, source, update):
 	thread = threading.current_thread()
 	count = 0
-
+	print "Retrieving from source:"
 	for tweet in source:
 		if thread.stop:
 			threads.remove(thread)
@@ -114,11 +134,10 @@ def retreive_tweets_with_newsflash(nf_obj, source, update):
 		# NOTE THAT THIS IGNORES THE ORIGINAL TWEET
 		# IN THE CASE OF RETWEETS. this is okay, for now.
 		t = parse_streaming_tweet(tweet)
-
 		if t is not None:
 			t = t[0]
 			count += 1
-			sys.stdout.write(' Parsing tweet %d    \r' % (update))
+			sys.stdout.write(' Parsing tweet %d    \r' % (count))
 			sys.stdout.flush()
 
 			tweet_json = json.dumps({'type' : 'tweet', 
@@ -135,21 +154,15 @@ def retreive_tweets_with_newsflash(nf_obj, source, update):
 			if count == update:
 				sys.stdout.write('Recomputing rankings\n')
 				count = 0
-				rankings = nf.compute_rankings(nf_obj, True)
-				for term in rankings[:20]:
-				    rank = nf_obj.ranks[term]
-				    info = (term, rank.freq, rank.dfreq, rank.box_size)
-				    sys.stdout.write('%s (%d, %f)\t%f\n' % info) 
+				nf.compute_rankings(nf_obj)
+				stream_stats(nf_obj)
 				sys.stdout.write('\n')
-
-
-
 
 
 
 def analyze_file(data_file, directory):
 	nf_obj = nf.train_nf(directory+data_file)
-	sorted_terms = nf.compute_rankings(nf_obj, True)
+	sorted_terms = nf.compute_rankings(nf_obj)
 	top_20_terms, top_20_boxes = nf.get_top_x_terms(sorted_terms, 20, nf_obj)
 	stat_data = {'type' : 'top_term_stats', 'stats' : []}
 	for term_ind in range(0,len(top_20_terms)):
@@ -181,6 +194,8 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 	SW corner: 40.63,-74.12
 	NE corner: 40.94,-73.68
 	'''
+	global nf_obj
+	global is_trained
 	source = None
 	url = 'https://stream.twitter.com/1.1/statuses/filter.json'
 	add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
@@ -207,12 +222,12 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 		
 		print "Training Newsflash object"
 		nf_obj = nf.train_nf(data_dir+data_file)
-		
 		print "Calculating preliminary rankings"
-		ranked_terms = nf.compute_rankings(nf_obj)
-		
-		# could print top 20 here etc. but don't need to
-		
+		nf.compute_rankings(nf_obj)
+		is_trained = True
+		for client in clients:
+			client.write_message(json.dumps({'type' : 'status', 'status': True }))
+		stream_stats(nf_obj)
 		print "Begin streaming live data"
 		source = twitterreq((url+add), 'GET', [])
 
@@ -238,19 +253,16 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		global isFirst
 		global clients
 		global directory
+		global nf_obj
+		global is_trained
 		print 'new connection'
 		self.write_message(json.dumps({'type' : 'files', 
 			'files' : os.listdir(directory)}))
 		clients.append(self)
-		'''
-		if isFirst:
-			t = threading.Thread(target=stream_tweets, args = ('newsflash', 'tweets.txt', directory))
-			threading.Thread.stop = False
-			t.start()
-			t.stop = False
-			threads.append(t)
-			self.isFirst = False
-		'''
+		if is_trained:
+			stream_stats(nf_obj)
+		else:
+			self.write_message(json.dumps({'type' : 'status', 'status': False }))
 	
 	def on_message(self, message):
 		global directory
@@ -277,10 +289,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def on_close(self):
 		global threads
 		clients.remove(self)
-		if len(clients) == 0:
-			for thread in threads:
-				thread.stop = True
-			isFirst = True
 		print 'connection closed'
 
 application = tornado.web.Application([(r'/ws', WSHandler),])
@@ -291,7 +299,7 @@ if __name__ == "__main__":
 	http_server = tornado.httpserver.HTTPServer(application)
 	http_server.listen(8888)
 	try:
-		t = threading.Thread(target=stream_tweets, args = ('newsflash', 'small_tweets.txt', directory))
+		t = threading.Thread(target=stream_tweets, args = ('newsflash', train_file, directory))
 		threading.Thread.stop = False
 		t.start()
 		t.stop = False
