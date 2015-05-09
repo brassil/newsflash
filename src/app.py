@@ -41,6 +41,7 @@ signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 http_method = "GET"
 
 directory = "/"
+
 train_file = 'tweets_4d.txt'
 
 is_trained = False
