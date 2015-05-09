@@ -102,7 +102,7 @@ def get_tweets_by_term(nf, term):
 	return {'bounding_box' : get_corners(nf.ranks[term].box), 
 			'tweets' : [{'location' : nf.tweets[tid].loc, 
 			'text' : nf.tweets[tid].text,
-			nf.tweets[tid]. 'tid' : tid} for tid in nf.terms[term]]}
+			'tid' : tid} for tid in nf.terms[term]]}
 
 
 
