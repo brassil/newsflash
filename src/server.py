@@ -1,15 +1,6 @@
 from flask import Flask, render_template
-from flask.ext.socketio import SocketIO
-import json
-import oauth2 as oauth
-import urllib2 as urllib
-import sys
-import re
-
-
 
 app = Flask(__name__, template_folder="../templates/", static_folder="../static")
-socketio = SocketIO(app)
 
 @app.route("/realtime")
 def index():
@@ -26,4 +17,4 @@ def bound():
 
 
 if __name__ == "__main__":
-	socketio.run(app)
+	app.run()

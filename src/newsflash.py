@@ -193,6 +193,12 @@ def compute_rankings(nf):
 
 		# now calculate the geography thing
 		points = [nf.tweets[tid].loc for tid in tweets]
+
+		# if term == 'tbt':
+		# 	box, box_size, num_points, corners = trending_location(points, True) # make corners=true otherwise corners will be empty
+		# 	print corners
+		# 	sys.exit()
+
 		box, box_size, num_points, corners = trending_location(points, False) # make corners=true otherwise corners will be empty
 		today_points_ratio = num_points / float(len(points))
 

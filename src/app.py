@@ -15,7 +15,7 @@ import os
 import argparse
 
 import newsflash as nf
-from fetch_tweets import parse_streaming_tweet
+
 
 clients = []
 isFirst = True
@@ -238,6 +238,45 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 		print "ERROR: invalid mode requested!"
 
 
+
+def parse_streaming_tweet(t):
+    # don't freak out if JSON conversion fails
+    try: t = json.loads(t)
+    except: return None
+
+    # don't use if it's not a tweet
+    if 'text' not in t.keys(): return None
+
+    # don't use if it doesn't have location
+    if t['coordinates'] is None: return None
+
+    # include place if it's available
+    if t['place'] is None: place = ''
+    else: place = t['place']['full_name'].encode('utf-8')
+
+    # get all the shet
+    lng,lat = t['coordinates']['coordinates']
+    date = t['created_at'].encode('utf-8')
+    tweet_id = t['id_str'].encode('utf-8')
+    user_id = t['user']['id_str'].encode('utf-8')
+    followers = t['user']['followers_count']
+    text = t['text'].encode('utf-8')
+    source = re.split('>|<',t['source'].encode('utf-8'))[2]
+
+
+    # get entity information
+    hashtags = t['entities']['hashtags']
+    urls = [url['expanded_url'].encode('utf-8') for url in t['entities']['urls']]
+
+    # add the retweeted tweet if this is a retweet
+    original = None
+    retweet_id = ''
+    if 'retweeted_status' in t.keys():
+        # this tweet is a retweet
+        retweet_id = t['retweeted_status']['id_str'].encode('utf-8')
+        original = parse_streaming_tweet(t['retweeted_status'])
+
+    return [tweet_id,date,user_id,followers,place,lat,lng,text,source,hashtags,urls,retweet_id], original
 
 '''
 ASYNCHRONOUS POLLING
