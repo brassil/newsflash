@@ -21,11 +21,27 @@ def trending_location(points):
 	ugh it's not gonna work bc what if a split happens through the middle
 	of the cluster? well, at least if we do the entire united states,
 	it's less likely to happen? nah it still is bad
+
+	Ok so we're going to resolve the issue of when a split happens through
+	the middle of the cluster in the following way: if you split and
+	one half isn't >2x as big as the other one, try to split one more time
+	in the other direction (i.e. ignore this split and try the other way).
+	If that still doesn't work, then break & return. We use 'end' as a flag
+	so that we know if this loop is a 2nd try to reduce the size of the box.
+
+
+	This will fix the issue in all cases EXCEPT if the cluster is at 
+	the exact centroid. 
+
+	Also maybe we should update it so that it tries both latitudinal and 
+	longitudinal splits at each iteration and chooses the better one. idk.
+
+	also note that the extra corner that isn't used in the split will still happen
 	'''
 	# format = [[latmin, latmax], [lngmin, lngmax]]
 	box = [[SW[0], NE[0]], [SW[1], NE[1]]]
 	i = 1 # split on longitude first (0 is lat)
-
+	end = False
 
 	# get rid of this eventually, we only need it for intermediate bounding box visualization
 	corners = []
@@ -54,18 +70,23 @@ def trending_location(points):
 		# the 2* thing is just a basic idea, prob not what we should
 		# use in the end. 
 		if len(g) > 2*len(l):
+			end = False
 			box[i][0] = mid
 			i = (1 if i==0 else 0)
 			points = g
 
 		elif len(l) > 2*len(g):
+			end = False
 			box[i][1] = mid
 			i = (1 if i==0 else 0)
 			points = l
 
 		else:
-			# it's not a significant change so end it
-			break
+			if not end:
+				end = True
+				i = (1 if i==0 else 0)
+			else:
+				break # it's not a significant change so end it
 
 	# you get here either if the bounding box has become too small,
 	# or if we split the box and there was no significant change
