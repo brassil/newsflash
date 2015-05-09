@@ -60,8 +60,8 @@
 				bottom: 10px;
 				padding: 10px;
 				border-radius: 3px;
-				box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.5);
 				background-color: #2980B9;
+				overflow: hidden;
 			}
 			
 			#tweet_text p{
@@ -237,15 +237,17 @@
 				overflow-x: scroll;
 				border-radius: 3px;
 			}
-			#stats_inner{
+			.shadow_inner{
 				position: absolute;
 				width: 100%;
 				height: 100%;
 				top: 0;
+				left: 0;
 				border-radius: 3px;
 				box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.5);
 				background-color: transparent;
 				pointer-events: none;
+				z-index: 10;
 			}
 			#stats_scroll{
 				position: relative;
@@ -271,8 +273,38 @@
 			}
 			
 			.selected{
-				background-color: #bfe4ff !important;
+				background-color: #91b5ce !important;
 			}
+			
+			.tweet_text_inner{
+				position: absolute;
+			}
+			
+			#tweet_live{
+				position: absolute;
+				height: 70px;
+				width: 100%;
+				top: 0;
+				left: 0;
+			}
+			
+			#tweet_hover{
+				position: absolute;
+				top: 70px;
+				width: 100%;
+				left: 0;
+				height: 70px;
+				background-color: #E74C3C;
+				transition: top 0.5s;
+				border-radius: 3px;
+				padding: 10px;
+			}
+			
+			#tweet_hover.slide_in{
+				top: 0;
+				transition: top 0.5s;
+			}
+			
 		</style>
 	</head>
 	<body>
@@ -302,7 +334,7 @@
 				<div id="stats_scroll">
 					<ul id="term_stats"></ul>
 				</div>
-				<div id="stats_inner"></div>
+				<div class="shadow_inner"></div>
 			</div>
 		</aside>
 		<section id="map">
@@ -318,6 +350,11 @@
 			<section id="tweet_view">
 				<h3>Current Tweet</h3>
 				<section id="tweet_text">
+					<div class="shadow_inner"></div>
+					<div id="tweet_live" class="tweet_text_inner">
+					</div>
+					<div id="tweet_hover" class="tweet_text_inner">
+					</div>
 				</section>
 			</section>
 		</nav>
@@ -376,6 +413,7 @@
 
 			
 		d3.json("static/nyc.json", function(error, nyc) {
+			console.log(nyc);
 			if (error) return console.error(error);
 			var svg = d3.select("#map").append("svg")
 			    .attr("width", width)
@@ -406,15 +444,16 @@
 			
 			
 
-			function new_tweet(lat, longitude, fade, id){
+			function new_tweet(lat, longitude, fade, tid){
 				var point = svg.append("path")
 					.datum({type: "MultiPoint", coordinates: [{'0' : String(longitude), '1' : String(lat)}]})
 					.attr("class", "points")
 					.attr("d", path)
-					.attr('tweet_id', id)
-					.style('fill', nyc_map[0])
+					.attr('tweet_id', tid)
+					.style('fill', flat_ui[1])
 					.style('opacity', '0')
-					.on('mouseover', showTweet);
+					.on('mouseover', showTweet)
+					.on('mouseout', removeTweet);
 				if(fade){
 					point.transition()
 					.duration(1250)
@@ -500,8 +539,8 @@
 					}
 				//TWEET MESSAGE
 				}else if(data.type == 'tweet'){
-					$('#tweet_text').html('<p>'+data.tweet.tweet+'</p>');
-					new_tweet(data.tweet.latitude, data.tweet.longitude, true);
+					$('#tweet_live').html('<p>'+data.tweet.tweet+'</p>');
+					new_tweet(data.tweet.latitude, data.tweet.longitude, true, data.tweet.tid);
 				//TOP_TERMS MESSAGE
 				}else if(data.type == 'top_terms'){
 					console.log(data.terms);
@@ -526,7 +565,7 @@
 						$('#load_hold').fadeOut();
 					}
 				}else if(data.type == 'tweet_text'){
-					console.log(data['tweet_text']);
+					$('#tweet_hover').html('<p>'+data['tweet_text']+'</p>').addClass('slide_in');
 				}
 			};
 			ws.onclose = function(evt) { console.log("Connection close"); };
@@ -537,8 +576,12 @@
 			function showTweet(d){
 				var id = $(this).attr('tweet_id');
 				var data = {'type' : 'get_tweet_text', 'tid' : id}
-				ws.send(JSON.stringify((data));
+				ws.send(JSON.stringify(data));
 			};
+			
+			function removeTweet(d){
+				$('#tweet_hover').removeClass('slide_in');
+			}
 			
 			$(document).on('click', '#term_stats > li', function(){
 				
@@ -572,8 +615,6 @@
 			$('#stream').click(function(){
 				$('#file_select').removeClass('pu_show');
 				event.stopPropagation();
-				var	data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
-				
 				var data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
 				if($('#bound').attr('select')=='yes'){
 					data.details.mode = 'bound';
@@ -582,7 +623,6 @@
 			});
 			
 			$('#live').click(function(){
-				console.log('here');
 				var data = {type : 'mode_change', details: {mode : 'live'}};
 				ws.send(JSON.stringify(data));
 			});
