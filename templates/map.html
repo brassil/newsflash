@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+/* CSS goes here. */
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+<style>
+body{
+	margin: 0;
+	padding: 0;
+	top: 0;
+	left: 0;
+}
+
+
+</style>
+
+<script>
+
+var width = $(window).width(),
+    height = $(window).height();
+
+var treasure_map = ['#568C82', '#D9C8A9', '#BF884A', '#363535', '#B52A33'];
+var vintage_map = ['#262401', '#A6A381', '#8DA387', '#261501', '#0D0300'];
+var city_map = ['#BF2C38', '#BFD1D9', '#A6BFA3', '#84A651', '#6A9CB3'];
+var nyc_map = ['#F21D2F', '#6DDAF2', '#B8D971', '#EBF2B6', '#BFB99B'];
+
+var projection = d3.geo.albers()
+	.center([0, 40.71])
+	.rotate([74.0, 0])
+	.parallels([50, 60])
+	.scale(105000)
+	.translate([width / 2, height / 2]);
+
+
+queue()
+    .defer(d3.csv, "data/coords.csv")
+    .await(ready);
+
+function ready(error, tweets){
+	d3.json("data/nyc.json", function(error, nyc) {
+		if (error) return console.error(error);
+
+		var zoom = d3.behavior.zoom()
+			.scaleExtent([1, 8])
+			.on("zoom", move);
+
+		var svg = d3.select("body").append("svg")
+		    .attr("width", width)
+		    .attr("height", height)
+		    .style('background-color', nyc_map[1])
+		    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+		    .call(zoom);
+
+		var subunits = topojson.feature(nyc, nyc.objects.boroughs);
+
+		var path = d3.geo.path()
+			.projection(projection)
+			.pointRadius(2);
+
+		
+
+		var land = svg.append("path")
+			.datum(subunits)
+			.attr("d", path)
+			.style('fill', nyc_map[3]);
+
+		var base = 0;
+		var total_delay = 0;
+
+		function fade_out(point, delay){
+			point.transition()
+				.duration(1250)
+				.style('opacity', '0')
+				.delay(delay+1000);
+		}
+
+		for (var i=0; i<tweets.length; i++){
+			if (!base){
+				base = Date.parse(tweets[i].time);
+			}else{
+				total_delay = (Date.parse(tweets[i].time)-base)/500;
+			}
+			var point = svg.append("path")
+				.datum({type: "MultiPoint", coordinates: [tweets[i]]})
+				.attr("class", "points")
+				.attr("d", path)
+				.style('fill', nyc_map[0])
+				.style('opacity', '0');
+			point.transition()
+				.duration(1250)
+				.style('opacity', '1')
+				.delay(total_delay)
+				.each('end', fade_out(point, total_delay));
+			//point.append('svg:animate') .attr('attributeName', 'opacity') .attr('from', '1') .attr('to', '0') .attr('dur', 5);
+
+		}
+		var points = d3.selectAll('.points');
+
+		function move() {
+			var t = d3.event.translate,
+				s = d3.event.scale;
+				t[0] = Math.min(width / 2 * (s - 1), Math.max(width / 2 * (1 - s), t[0]));
+				t[1] = Math.min(height / 2 * (s - 1) + 230 * s, Math.max(height / 2 * (1 - s) - 230 * s, t[1]));
+				zoom.translate(t);
+			
+			land.attr("transform", "translate(" + t + ")scale(" + s + ")");
+			points.attr("transform", "translate(" + t + ")scale(" + s + ")");
+		}
+	});
+}
+
+</script>

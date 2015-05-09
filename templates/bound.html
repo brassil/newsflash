@@ -1,0 +1,648 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Realtime Manhattan</title>
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script src="http://d3js.org/topojson.v1.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+		<style>
+			@import url(http://fonts.googleapis.com/css?family=Lato:300,400,700,900);
+			body{
+				margin: 0;
+				padding: 0;
+				top: 0;
+				left: 0;
+				min-width: 1024px;
+				font-family: "Lato", sans-serif;
+			}
+			
+			h3{
+				font-weight: 500;
+				font-size: 12px;
+			}
+			
+			nav{
+				position: absolute;
+				bottom: 0;
+				height: 120px;
+				left: 0;
+				right: 0;
+				background-color: #3498DB;
+				box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.4);
+				color: white;
+			}
+
+			#vis_select{
+				position: absolute;
+				width: 300px;
+				left: 0;
+				top: 0;
+				bottom: 0;
+				margin-left: 20px;
+			}
+			#tweet_view{
+				position: absolute;
+				left: 300px;
+				right: 0px;
+				top: 0px;
+				bottom: 0px;
+				border-radius: 3px;
+				margin-left: 10px;
+			}
+			
+			#tweet_text{
+				position: absolute;
+				left: 0px;
+				right: 10px;
+				top: 40px;
+				bottom: 10px;
+				padding: 10px;
+				border-radius: 3px;
+				background-color: #2980B9;
+				overflow: hidden;
+			}
+			
+			#tweet_text p{
+				margin: 0;
+				font-weight: 300;
+			}
+			
+			#vis_list{
+				list-style: none;
+				font-size: medium;
+				line-height: 25px;
+				margin: 0;
+				padding: 0;
+			}
+			#map{
+				position: absolute;
+				left: 250px;
+				right: 0;
+				top: 0;
+				bottom: 120px;
+			}
+			.popup{
+				position: absolute;
+				margin: auto;
+				left: 0;
+				right: 0;
+				top: 0;
+				bottom: 0;
+				background-color: #ECF0F1;
+				border-radius: 5px;
+				box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.3);
+				z-index: 1;
+				visibility: hidden;
+				padding: 20px;
+			}
+			
+			#file_select{
+				width: auto;
+				max-width: 200px;
+				height: auto;
+				max-height: 300px;
+			}
+			
+			#file_select ul{
+				list-style: none;
+				line-height: 25px;
+				padding: 0;
+				margin: 0;
+			}
+			
+			ul li{
+				cursor: pointer;
+			}
+			
+			.pu_show{
+				visibility: visible;
+			}
+			
+			.pu_effect{
+				transform: scale(0) rotate(0deg);
+				opacity: 0;
+				transition: all 0.5s;
+			}
+			
+			.pu_show.pu_effect{
+				transform: scale(1) rotate(0deg);
+				opacity: 1;
+			}
+			
+			#buttons{
+				position: absolute;
+				bottom: 0;
+				height: 30px;
+				right: 10px;
+				width: 148px;
+			}
+			
+			.blue{
+				background-color: #3498DB;
+				transition: all 0.2s;
+			}
+			
+			.blue:hover{
+				background-color: #2C3E50;
+				transition: all 0.2s;
+			}
+			
+			.red{
+				background-color: #E74C3C;
+				transition: all 0.2s;
+			}
+			
+			.red:hover{
+				background-color: #aa382b;
+				transition: all 0.2s;
+			}
+			
+			.button{
+				position: relative;
+				float: left;
+				border-radius: 3px;
+				border: 2px solid white;
+				font-size: 15px;
+				font-weight: 500;
+				text-align: center;
+				height: 20px;
+				width: 60px;
+				line-height: 20px;
+				margin-left: 10px;
+				color: white;
+			}
+			
+			.grey{
+				background-color: #d7d7d7;
+			}
+			
+			.button.red, .button.blue{
+				cursor: pointer;
+			}
+			
+			.option_highlight{
+				font-weight: 900;
+			}
+			#file_wrapper{
+				position: relative;
+				float: left;
+				width: 100%;
+			}
+			
+			aside{
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 250px;
+				bottom: 120px;
+				box-shadow: 1px 0px 1px rgba(0, 0, 0, .3);
+				z-index: 1;
+				background-color: #e4e4e4;
+				padding-left: 20px;
+			}
+			
+			#term_stats{
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			
+			#term_stats li ul{
+				list-style: none;
+				font-size: small;
+			}
+			
+			#term_stats > li{
+				padding-left: 10px;
+				padding-right: 10px;
+				padding-bottom: 5px;
+				padding-top: 5px;
+			}
+			
+			#term_stats > li:nth-child(odd){
+				background-color: #dcdcdc;
+			}
+			#term_stats > li:nth-child(even){
+				background-color: #e6e6e6;
+			}
+			
+			#stats_wrapper{
+				position: absolute;
+				top: 75px;
+				bottom: 10px;
+				right: 10px;
+				left: 20px;
+				overflow-x: scroll;
+				border-radius: 3px;
+			}
+			.shadow_inner{
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				top: 0;
+				left: 0;
+				border-radius: 3px;
+				box-shadow: inset 0px 0px 3px rgba(0, 0, 0, 0.5);
+				background-color: transparent;
+				pointer-events: none;
+				z-index: 10;
+			}
+			#stats_scroll{
+				position: relative;
+				width: 100%;
+				height: 100%;
+				overflow-y: scroll;
+			}
+			
+			#load_hold{
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				background-color: rgba(0, 0, 0, 0.5);
+				color: white;
+				text-align: center;
+				display: none;
+				z-index: 100;
+			}
+			#load_hold h1{
+				margin-top: 25%
+			}
+			
+			.selected{
+				background-color: #91b5ce !important;
+			}
+			
+			.tweet_text_inner{
+				position: absolute;
+			}
+			
+			#tweet_live{
+				position: absolute;
+				height: 70px;
+				width: 100%;
+				top: 0;
+				left: 0;
+			}
+			
+			#tweet_hover{
+				position: absolute;
+				top: 70px;
+				width: 100%;
+				left: 0;
+				height: 70px;
+				background-color: #E74C3C;
+				transition: top 0.5s;
+				border-radius: 3px;
+				padding: 10px;
+			}
+			
+			#tweet_hover.slide_in{
+				top: 0;
+				transition: top 0.5s;
+			}
+			
+		</style>
+	</head>
+	<body>
+		<section id="load_hold">
+			<h1>Hold on there...</h1>
+			<h3>We're crunching numbers. Be back in a moment!</h3>
+		</section>
+		<section class="popup pu_effect" id="file_select" file="None">
+			<h2>Available Files</h2>
+			<div id="file_wrapper">
+				<ul>
+				</ul>
+			</div>
+			<section id="buttons">
+				<div class="button grey" id="analyze">
+					Analyze
+				</div>
+				<div class="button grey" id="stream">
+					Stream
+				</div>
+			</section>
+		</section>
+		<aside>
+			<h2>Tweet Statistics</h2>
+			<div id="stats_wrapper">
+				
+				<div id="stats_scroll">
+					<ul id="term_stats"></ul>
+				</div>
+				<div class="shadow_inner"></div>
+			</div>
+		</aside>
+		<section id="map">
+		</section>
+		<nav>
+			<section id="vis_select">
+				<h3>Stream Type</h3>				
+				<ul id="vis_list">
+					<li id="live">Live</li>
+					<li id="file">From File</li>
+				</ul>
+			</section>
+			<section id="tweet_view">
+				<h3>Current Tweet</h3>
+				<section id="tweet_text">
+					<div class="shadow_inner"></div>
+					<div id="tweet_live" class="tweet_text_inner">
+					</div>
+					<div id="tweet_hover" class="tweet_text_inner">
+					</div>
+				</section>
+			</section>
+		</nav>
+	<script>
+		
+		var terms = [];
+		var links = [];
+		
+		
+		Number.prototype.toFixedDown = function(digits) {
+		    var re = new RegExp("(\\d+\\.\\d{" + digits + "})(\\d)"),
+		        m = this.toString().match(re);
+		    return m ? parseFloat(m[1]) : this.valueOf();
+		};
+		
+		$(document).on('click', '#file_select ul li', function(event){
+			if(!$(this).hasClass('option_highlight')){
+				$('#file_select ul li').removeClass('option_highlight');
+				$(this).addClass('option_highlight');
+				if($('#file_select').attr('file') == 'None'){
+					$('#stream').toggleClass('grey').toggleClass('red');
+					$('#analyze').toggleClass('grey').toggleClass('blue');
+				}	
+				$('#file_select').attr('file', $(this).attr('file'));
+			}else{
+				$('#file_select ul li').removeClass('option_highlight');
+				$('#file_select').attr('file', 'None');
+				$('#stream').toggleClass('grey').toggleClass('red');
+				$('#analyze').toggleClass('grey').toggleClass('blue');
+			}		
+		});
+		
+		$('#file').click(function(event){
+			$('#file_select').toggleClass('pu_show');
+		});
+
+		$('#map').click(function(){
+			$('#file_select').removeClass('pu_show');
+		});
+		
+		var width = $(window).width(),
+		    height = $(window).height();
+
+		var treasure_map = ['#568C82', '#D9C8A9', '#BF884A', '#363535', '#B52A33'];
+		var vintage_map = ['#262401', '#A6A381', '#8DA387', '#261501', '#0D0300'];
+		var city_map = ['#BF2C38', '#BFD1D9', '#A6BFA3', '#84A651', '#6A9CB3'];
+		var nyc_map = ['#F21D2F', '#6DDAF2', '#B8D971', '#EBF2B6', '#BFB99B'];
+		var flat_ui = ['#2C3E50', '#E74C3C', '#ECF0F1', '#3498DB', '#2980B9'];
+
+		var projection = d3.geo.albers()
+			.center([0, 40.682999])
+			.rotate([73.85, 0])
+			.parallels([50, 60])
+			.scale(66000)
+			.translate([width / 2, height / 2]);
+
+		d3.json("static/nyc.json", function(error, nyc) {
+			console.log(nyc);
+			if (error) return console.error(error);
+			var svg = d3.select("#map").append("svg")
+			    .attr("width", width)
+			    .attr("height", height)
+			    .style('background-color', nyc_map[1])
+			    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+			var subunits = topojson.feature(nyc, nyc.objects.boroughs);
+
+			var path = d3.geo.path()
+				.projection(projection)
+				.pointRadius(2);
+
+			var land = svg.append("path")
+				.datum(subunits)
+				.attr("d", path)
+				.style('fill', nyc_map[3]);
+				
+			var g = svg.append("g");
+			// var arcGroup = svg.append('g');
+			
+
+			function fade_out(point){
+				point.transition()
+					.duration(1250)
+					.style('opacity', '0')
+					.delay(5000);
+			}
+			
+			
+
+			function new_tweet(lat, longitude, fade, tid){
+				var point = svg.append("path")
+					.datum({type: "MultiPoint", coordinates: [{'0' : String(longitude), '1' : String(lat)}]})
+					.attr("class", "points")
+					.attr("d", path)
+					.attr('tweet_id', tid)
+					.style('fill', flat_ui[1])
+					.style('opacity', '0')
+					.on('mouseover', showTweet)
+					.on('mouseout', removeTweet)
+					.on('click', showTweet);
+				if(fade){
+					point.transition()
+					.duration(1250)
+					.style('opacity', '1')
+					.each('end', fade_out(point));
+				}else{
+					point.style('opacity', '1');
+				}
+			}
+			
+			
+			function draw_box(coords){
+				var lines = [];
+				for (var i=0; i<3; i++){
+					lines.push({
+						type: "LineString",
+						coordinates : [
+							[coords[i][1], coords[i][0]],
+							[coords[i+1][1], coords[i+1][0]]
+						]
+					});
+				}
+				lines.push({
+					type: "LineString",
+					coordinates : [
+						[coords[3][1], coords[3][0]],
+						[coords[0][1], coords[0][0]]
+					]
+				});
+				
+				svg.selectAll('.arc').remove();
+				var pathArcs = svg.selectAll('.arc')
+					.data(lines)
+					.enter()
+					.append('path').attr({
+						'class' : 'arc'
+					}).style({
+						fill: 'none',
+					}).attr({
+						d: path
+					}).style({
+						stroke: '#0000ff',
+						'stroke-width' : '1px'
+					});
+			}
+
+			var points = d3.selectAll('.points');
+			// var arcGroup = svg.selectAll('.arc');
+			
+			function move() {
+				var t = d3.event.translate,
+					s = d3.event.scale;
+					t[0] = Math.min(width / 2 * (s - 1), Math.max(width / 2 * (1 - s), t[0]));
+					t[1] = Math.min(height / 2 * (s - 1) + 230 * s, Math.max(height / 2 * (1 - s) - 230 * s, t[1]));
+					zoom.translate(t);
+				
+				land.attr("transform", "translate(" + t + ")scale(" + s + ")");
+				points.attr("transform", "translate(" + t + ")scale(" + s + ")");
+				svg.selectAll('.arc').attr('transform', "translate(" + t + ")scale(" + s + ")");
+			}
+			
+			function reset_view(){
+				land.attr("transform","translate("+ 
+					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+				svg.selectAll('.points').attr("transform","translate("+ 
+					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+				svg.selectAll('.arc').attr("transform","translate("+ 
+					d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+			}
+			
+			var ws;
+			var host = 'localhost';
+			var port = '8888';
+			var uri = '/ws';
+			ws = new WebSocket("ws://" + host + ":" + port + uri);
+			//handle incoming socket events
+			ws.onmessage = function(evt) {			
+				var data = JSON.parse(evt.data);
+				//FILE MESSAGE
+				if(data.type == 'files'){
+					for (var file=0; file<data.files.length; file++){
+						$('#file_select ul').append('<li file="'+data.files[file]+'">'+data.files[file]+'</ul>');
+					}
+				//TWEET MESSAGE
+				}else if(data.type == 'tweet'){
+					$('#tweet_live').html('<p>'+data.tweet.text+'</p>');
+					new_tweet(data.tweet.latitude, data.tweet.longitude, true, data.tweet.tid);
+				//TOP_TERMS MESSAGE
+				}else if(data.type == 'top_terms'){
+					console.log(data.terms);
+				//BOX MESSAGE
+				}else if(data.type == 'box'){
+					draw_box(data.box);
+				//STATS MESSAGE
+				}else if(data.type == 'top_term_stats'){
+					terms = data.stats;
+					for (var x=0; x<terms.length; x++){
+						var li = $('<li><i>'+terms[x].term+'</i><ul><li>Freq: '+terms[x].freq.toFixedDown(2)+'</li><li>∆ Freq: '+terms[x].dfreq.toFixedDown(5)+'</li><li>Bound Size: '+terms[x].box_size.toFixedDown(2)+'</li></ul></li>');
+						li.data(terms[x]);
+						$('#term_stats').append(li);
+					}
+				}else if(data.type == 'top_links'){
+					links = data.links;
+					//DO SOMETHING HERE WITH LINKS
+				}else if(data.type == 'status'){
+					if(data.status == false){
+						$('#load_hold').fadeIn();
+					}else if(data.status == true){
+						$('#load_hold').fadeOut();
+					}
+				}else if(data.type == 'tweet_text'){
+					$('#tweet_hover').html('<p>'+data['tweet_text']+'</p>').addClass('slide_in');
+				}
+			};
+			ws.onclose = function(evt) { console.log("Connection close"); };
+			ws.onopen = function(evt) { 
+				console.log('CONNECTION OPEN');
+			};
+			
+			function showTweet(d){
+				var id = $(this).attr('tweet_id');
+				var data = {'type' : 'get_tweet_text', 'tid' : id}
+				ws.send(JSON.stringify(data));
+			};
+			
+			function removeTweet(d){
+				$('#tweet_hover').removeClass('slide_in');
+			}
+			
+			$(document).on('click', '#term_stats > li', function(){
+				
+				if($(this).hasClass('selected')){
+					svg.selectAll('.points').remove();
+					svg.selectAll('.arc').remove();
+					$(this).removeClass('selected');
+				}else{
+					$('#term_stats li').removeClass('selected');
+					$(this).addClass('selected');
+					var data = $(this).data();
+					svg.selectAll('.points').remove();
+
+					for (var tweet=0; tweet<data.tweets.tweets.length; tweet++){
+						new_tweet(data.tweets.tweets[tweet].location[0], data.tweets.tweets[tweet].location[1], false, data.tweets.tweets[tweet].tid);
+					}
+					draw_box(data.tweets.bounding_box);
+
+					if(d3.event != null){
+						reset_view();
+					}
+				}
+			});
+
+			$('#analyze').click(function(){
+
+				$('#file_select').removeClass('pu_show');
+				event.stopPropagation();
+				var data = {type : 'mode_change', details : {mode : 'analyze', file : $('#file_select').attr('file')}};
+				ws.send(JSON.stringify(data));
+			});
+			
+			$('#stream').click(function(){
+				$('#file_select').removeClass('pu_show');
+				event.stopPropagation();
+				var data = {type : 'mode_change', details : {mode : 'file', file : $(this).attr('file')}};
+				if($('#bound').attr('select')=='yes'){
+					data.details.mode = 'bound';
+				}
+				ws.send(JSON.stringify(data));	
+			});
+			
+			$('#live').click(function(){
+				var data = {type : 'mode_change', details: {mode : 'live'}};
+				ws.send(JSON.stringify(data));
+			});
+			var zoom = d3.behavior.zoom()
+				.on("zoom",function() {
+					reset_view();
+					/*
+					land.attr("transform","translate("+ 
+						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+					svg.selectAll('.points').attr("transform","translate("+ 
+						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+					arcGroup.selectAll('.arc').attr("transform","translate("+ 
+						d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+						*/
+				});
+			
+			svg.call(zoom);
+		});
+	</script>
+	</body>
+</html>
