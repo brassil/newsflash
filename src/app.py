@@ -284,6 +284,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			t.stop = False
 			threads.append(t)
 			t.start()
+		elif (data['type'] == 'get_tweet_text'):
+			self.write_message(json.dumps({'type' : 'tweet_text',
+				{'tweet_text' : nf_obj.tweets[data['tid']].text }}))
 
 
 	def on_close(self):
