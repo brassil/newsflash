@@ -403,14 +403,20 @@
 					.style('opacity', '0')
 					.delay(5000);
 			}
+			
+			function showTweet(d){
+				console.log(d.attr('tweet_id'));
+			};
 
-			function new_tweet(lat, longitude, fade){
+			function new_tweet(lat, longitude, fade, id){
 				var point = svg.append("path")
 					.datum({type: "MultiPoint", coordinates: [{'0' : String(longitude), '1' : String(lat)}]})
 					.attr("class", "points")
 					.attr("d", path)
+					.attr('tweet_id', id)
 					.style('fill', nyc_map[0])
-					.style('opacity', '0');
+					.style('opacity', '0')
+					.on('mouseover', showTweet);
 				if(fade){
 					point.transition()
 					.duration(1250)
@@ -540,7 +546,8 @@
 					var data = $(this).data();
 					svg.selectAll('.points').remove();
 					for (var tweet=0; tweet<data.tweets.tweets.length; tweet++){
-						new_tweet(data.tweets.tweets[tweet].location[0], data.tweets.tweets[tweet].location[1], false);
+						console.log(data.tweets.tweets[tweet]);
+						new_tweet(data.tweets.tweets[tweet].location[0], data.tweets.tweets[tweet].location[1], false, data.tweets.tweets[tweet].tid);
 					}
 					draw_box(data.tweets.bounding_box);
 					if(d3.event != null){
