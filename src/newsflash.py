@@ -181,8 +181,12 @@ def compute_rankings(nf):
 	ranks = {}
 	print 'tweet collection window = %f days' % window
 
+	t = time.time()
+
 	for term,tweets in nf.terms.items():
 		freq = len(tweets)
+
+		if freq < 50: continue # ignore terms with less than 50 tweets
 
 		# now calculate the increase / rate of increase of freq somehow.
 		# for now, I'll just compare freq in the last day to freq overall		
@@ -208,9 +212,10 @@ def compute_rankings(nf):
 		nf.ranks[term] = Rank(freq, dfreq, box, box_size, corners)
 
 
-	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**2) # *(1+x[1][3])
+	sorter = lambda x: nf.ranks[x].freq*(nf.ranks[x].dfreq**3) # *(1+x[1][3])
 	nf.sorted_terms = list(reversed(sorted(nf.ranks.keys(), key=sorter)))
 
+	print 'Computed rankings in %.1fs' % (time.time() - t)
 	# find_related_tweets(nf, [x for i,x in enumerate(sorted_rankings) if i<100])
 	return nf.sorted_terms
 
@@ -264,11 +269,17 @@ def main(tweet_data_file, pickle_file=None):
 	nf = train_nf(tweet_data_file, pickle_file)
 
 	sorted_terms = compute_rankings(nf)
-	top_20_terms, top_20_boxes = get_top_x_terms(sorted_terms, 20, nf)
-	for term in top_20_terms:
+	top_30_terms, top_30_boxes = get_top_x_terms(sorted_terms, 30, nf)
+	for term in top_30_terms:
 		rank = nf.ranks[term]
 		print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
 	print_top_x_links(nf, 10)
+
+	topterm, _ = get_top_x_terms(sorted_terms, 100, nf)
+	for term in topterm:
+		rank = nf.ranks[term]
+		if rank.dfreq >= 1.7:
+			print '%s (%d, %f)\t%f' % (term, rank.freq, rank.dfreq, rank.box_size)
 
 
 

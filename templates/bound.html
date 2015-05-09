@@ -550,6 +550,7 @@
 				//STATS MESSAGE
 				}else if(data.type == 'top_term_stats'){
 					terms = data.stats;
+					$('#term_stats').html('');
 					for (var x=0; x<terms.length; x++){
 						var li = $('<li><i>'+terms[x].term+'</i><ul><li>Freq: '+terms[x].freq.toFixedDown(2)+'</li><li>∆ Freq: '+terms[x].dfreq.toFixedDown(5)+'</li><li>Bound Size: '+terms[x].box_size.toFixedDown(2)+'</li></ul></li>');
 						li.data(terms[x]);
