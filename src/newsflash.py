@@ -133,7 +133,7 @@ def parse_tweet(nf, t, from_file=False):
 
 
 
-def acceleration(tweets, freq, start, end):
+def acceleration(tweet_times, freq, start, end, window):
 	'''
 	original function, 24h acceleration
 
@@ -141,8 +141,8 @@ def acceleration(tweets, freq, start, end):
 	tbh 24h is better because it includes a full cycle of day/night
 	'''
 	today_tweets = 0 # number of tweets w/ this term in the last 24h
-	for tid in tweets:
-		if end - nf.tweets[tid].time < 86400:
+	for t in tweet_times:
+		if end - t < 86400:
 			today_tweets += 1  # seconds per day = 86,400
 
 	dfreq = today_tweets / (freq/window)
@@ -166,7 +166,8 @@ def compute_rankings(nf):
 	window = (end-start)/86400 # seconds per day = 86,400
 
 	ranks = {}
-	print 'Computing term ranks -- tweet collection window = %f days' % window
+	print 'Computing term ranks'
+	print ' -- tweet collection window = %.1f days' % window
 
 	t = time.time()
 
@@ -174,7 +175,8 @@ def compute_rankings(nf):
 		freq = len(tweets)
 		if freq < 50: continue # ignore terms with less than 50 tweets
 		
-		dfreq = acceleration(tweets, freq, start, end)
+		dfreq = acceleration((nf.tweets[tid].time for tid in tweets), 
+			freq, start, end, window)
 
 		# now calculate the bounding box
 		points = [nf.tweets[tid].loc for tid in tweets]
@@ -218,16 +220,39 @@ def train_nf(tweet_data_file, ngrams=1):
 
 	'''
 	t = time.time()
-	print 'Training Newsflash object -- maximum ngram = %d' % ngrams
+	print 'training Newsflash object'
+	print ' -- maximum ngram = %d' % ngrams
 	nf = Newsflash(ngrams)
 
-	with open(tweet_data_file) as f:
+	# with open(tweet_data_file) as f:
+	# 	r = csv.reader(f)
+	# 	next(r, None) # eliminate header row
+	# 	nf.first_tweet = parse_tweet(nf, next(r, None), True)
+	# 	for row in r: nf.last_tweet = parse_tweet(nf, row, True)
+
+
+	# version that includes progress info
+	with open(tweet_data_file,'rU') as f:
+		n = sum(1 for _ in f) - 1
+		print ' -- %d training tweets' % n
+		n /= 100 # convert it to a percent ---- can change this for diff print intervals
+		f.seek(0)
+
 		r = csv.reader(f)
 		next(r, None) # eliminate header row
 		nf.first_tweet = parse_tweet(nf, next(r, None), True)
-		for row in r: nf.last_tweet = parse_tweet(nf, row, True)
+		
+		i = 1 # number of tweets parsed
+		p = 0 # percent complete
+		for row in r:	
+			nf.last_tweet = parse_tweet(nf, row, True)
+			i += 1
+			if i % n == 0:
+				p += 1
+				sys.stdout.write(' -- %d%% complete   \r' % p)
+				sys.stdout.flush()
 	
-	print 'train time: %.1fs' % (time.time() - t)
+	print 'train time: %.1fs             ' % (time.time() - t)
 	return nf
 
 
