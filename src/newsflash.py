@@ -97,7 +97,7 @@ def get_tweets_by_term(nf, term):
 		- list of (location, tweet ID) tuples for all tweets containing the term
 	'''
 	if len(nf.ranks) == 0:
-		e = 'ERROR - rankings have not been calculated yet'
+		e = 'error: rankings have not been calculated yet'
 		sys.stderr.write(e+'\n')
 		return [e]
 
@@ -133,6 +133,26 @@ def parse_tweet(nf, t, from_file=False):
 
 
 
+def acceleration(tweets, freq, start, end):
+	'''
+	original function, 24h acceleration
+
+	Could plot the last X 6 or 12 hr periods?
+	tbh 24h is better because it includes a full cycle of day/night
+	'''
+	today_tweets = 0 # number of tweets w/ this term in the last 24h
+	for tid in tweets:
+		if end - nf.tweets[tid].time < 86400:
+			today_tweets += 1  # seconds per day = 86,400
+
+	dfreq = today_tweets / (freq/window)
+
+
+	return dfreq
+
+
+
+
 
 def compute_rankings(nf):
 	'''
@@ -152,17 +172,9 @@ def compute_rankings(nf):
 
 	for term,tweets in nf.terms.items():
 		freq = len(tweets)
-
 		if freq < 50: continue # ignore terms with less than 50 tweets
-
-		# now calculate the increase / rate of increase of freq somehow.
-		# for now, I'll just compare freq in the last day to freq overall		
-		today_tweets = 0 # number of tweets w/ this term in the last 24h
-		for tid in tweets:
-			if end - nf.tweets[tid].time < 86400:
-				today_tweets += 1  # seconds per day = 86,400
-
-		dfreq = today_tweets / (freq/window)
+		
+		dfreq = acceleration(tweets, freq, start, end)
 
 		# now calculate the bounding box
 		points = [nf.tweets[tid].loc for tid in tweets]
@@ -241,11 +253,11 @@ def main(tweet_data_file, ngrams=1): # pickle_file=None):
 
 if __name__ == '__main__':
 	if len(sys.argv)<2 or len(sys.argv)>3:
-		sys.exit('Usage: python newsflash.py <tweet_data_file> [<ngrams>]')
+		sys.exit('usage: python newsflash.py <tweet_data_file> [<ngrams>]')
 
 
 	if not os.path.isfile(sys.argv[1]):
-		sys.exit('ERROR - Could not find a file at %s.' % sys.argv[1])
+		sys.exit('error: could not find a file at %s' % sys.argv[1])
 
 	if len(sys.argv) == 2:
 		main(sys.argv[1], 1) # only unigrams by default
@@ -257,9 +269,9 @@ if __name__ == '__main__':
 			if ngrams >= 1 and ngrams <= 5: 
 				main(sys.argv[1], ngrams)
 			else:
-				sys.exit('ERROR - Ngrams input must be a valid integer in [1,5]')
+				sys.exit('error: ngrams input must be a valid integer in [1,5]')
 		except:
-			sys.exit('ERROR - Ngrams input must be a valid integer in [1,5]')
+			sys.exit('error: ngrams input must be a valid integer in [1,5]')
 
 
 

@@ -2,15 +2,17 @@
 
 # TODO
 
-oooo look into what happens when a term wiht <50 gets shown o wait jk it wont. but it will if we do a search
+oooo look into what happens when a term wiht <50 gets shown o wait jk it wont. but it will if we implement a search box
 
 the WSHandler has some now-deprecated things in it
+
+add some options to the UI
 
 ### newsflash algorithms
 
 - improve entropic bounding box calculation: make it a little more stochastic than always splitting in the middle. We fixed part of the problem with the lat-long double-check switch but it could be better. Maybe the algo can take in a "thoroughness" level that checks a few options per iteration and chooses the best one
-- improve acceleration algo by making it like more frequency graph over time instead of a 24h strict cutoffz
-- tokenizer: implement ngrams > 2
+- improve acceleration algo by making it like more frequency graph over time instead of a 24h strict cutoffs
+
 
 
 
