@@ -41,11 +41,6 @@ class Tokenizer:
 		words = set()
 		ng = []
 
-		'''GET RID OF THIS ONCE YOU FIX IT'''
-		if self.ngrams > 2:
-			print 'WARNING - tokenize() does not currently support ngrams > 2.\n          This algorithm will cap ngrams at 2 and proceed.'
-			self.ngrams = 2
-
 		# fix the most common HTML escapes
 		tweet = tweet.replace('&quot;','').replace('&nbsp;',' ').replace('&amp;',' ')
 
@@ -84,10 +79,17 @@ class Tokenizer:
 
 
 		# Generate all ngrams and add them
-		if self.ngrams>1:
+		if self.ngrams>1 and len(words)>0:
 			if self.ngrams > len(words): self.ngrams = len(words)
 			for i in range(len(ng)-self.ngrams+1):
-				ngram = ng[i]
+				try:
+					ngram = ng[i]
+				except IndexError:
+					print 'it failed'
+					print ng
+					print i
+					sys.exit()
+
 				for j in range(1,self.ngrams):
 					ngram += ' '+ng[i+j]
 					words.add(ngram)

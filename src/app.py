@@ -428,7 +428,8 @@ if __name__ == "__main__":
 	try:
 		# orig: (target=stream_tweets, args=('newsflash',train_file,directory))
 		t = threading.Thread(target=run_newsflash, 
-							 args=(opts.tweet_file, opts.ngrams_max))
+							 args=(opts.tweet_file, opts.lang, 
+							 	opts.bounding_box, opts.ngrams_max))
 		threading.Thread.stop = False
 		t.start()
 		t.stop = False
