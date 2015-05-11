@@ -33,12 +33,18 @@ links = ['www.', 'http://', 'https://', '.com/', '.org/', '.net/', '.co/', '.ly/
 
 
 class Tokenizer:
-	def __init__(self):
+	def __init__(self, ngrams=1):
 		self.stemmer = PorterStemmer()
+		self.ngrams = ngrams
 
-	def tokenize(self, tweet, ngrams=False):
+	def tokenize(self, tweet):
 		words = set()
 		ng = []
+
+		'''GET RID OF THIS ONCE YOU FIX IT'''
+		if self.ngrams > 2:
+			print 'WARNING - tokenize() does not currently support ngrams > 2.\n          This algorithm will cap ngrams at 2 and proceed.'
+			self.ngrams = 2
 
 		# fix the most common HTML escapes
 		tweet = tweet.replace('&quot;','').replace('&nbsp;',' ').replace('&amp;',' ')
@@ -74,17 +80,17 @@ class Tokenizer:
 			
 			words.add(notrip) # ignore words that don't start with alphabet
 
-			if ngrams: ng.append(notrip)
+			if self.ngrams>1: ng.append(notrip)
 
 
-		if ngrams:
+		if self.ngrams>1:
 			for i in range(len(ng)-1):
 				words.add(ng[i]+' '+ng[i+1])
 
 
 
 		'''YO THIS DOESN'T WORK BUT I STOPPED WORKING ON IT'''
-		# if ngrams:
+		# if self.ngrams>1:
 		# 	for i in range(len(ng)-ngrams+1):
 		# 		ngram = ng[i]
 		# 		for j in range(1,ngrams+1):

@@ -4,6 +4,7 @@
 
 oooo look into what happens when a term wiht <50 gets shown o wait jk it wont. but it will if we do a search
 
+the WSHandler has some now-deprecated things in it
 
 ### newsflash algorithms
 
@@ -30,6 +31,8 @@ oooo look into what happens when a term wiht <50 gets shown o wait jk it wont. b
 
 
 # ranking metrics 
+
+"term's acceleration and entropic density" lol sounds so flashy
 
 - overall freq of term (just an inverse index basically)
 - rate of increase of tweets relating to the term
