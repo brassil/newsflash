@@ -83,20 +83,14 @@ class Tokenizer:
 			if self.ngrams>1: ng.append(notrip)
 
 
+		# Generate all ngrams and add them
 		if self.ngrams>1:
-			for i in range(len(ng)-1):
-				words.add(ng[i]+' '+ng[i+1])
-
-
-
-		'''YO THIS DOESN'T WORK BUT I STOPPED WORKING ON IT'''
-		# if self.ngrams>1:
-		# 	for i in range(len(ng)-ngrams+1):
-		# 		ngram = ng[i]
-		# 		for j in range(1,ngrams+1):
-		# 			if j <= i:
-		# 				ngram += ' '+ng[i+j]
-		# 				words.add(ngram)
+			if self.ngrams > len(words): self.ngrams = len(words)
+			for i in range(len(ng)-self.ngrams+1):
+				ngram = ng[i]
+				for j in range(1,self.ngrams):
+					ngram += ' '+ng[i+j]
+					words.add(ngram)
 
 
 		return words
