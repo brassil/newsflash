@@ -171,7 +171,16 @@ def compute_rankings(nf):
 
 	t = time.time()
 
-	for term,tweets in nf.terms.items():
+	for term in nf.terms:
+		tweets = nf.terms[term]
+	# for term,tweets in (nf.terms.items() if ngrams==1 else reversed(sorted(nf.terms.items(), key=lambda x: len(x[0].split()))):
+		# if len(term.split())>1:
+		# 	# for now only doing ngrams->unigram, not ngrams->[1,n-1]grams
+		# 	terms = term.split()
+		# 	for x in terms:
+		# 		if 
+
+
 		freq = len(tweets)
 		if freq < 50: continue # ignore terms with less than 50 tweets
 		
@@ -221,7 +230,6 @@ def train_nf(tweet_data_file, ngrams=1):
 	'''
 	t = time.time()
 	print 'training Newsflash object'
-	print ' -- maximum ngram = %d' % ngrams
 	nf = Newsflash(ngrams)
 
 	# with open(tweet_data_file) as f:
@@ -234,7 +242,7 @@ def train_nf(tweet_data_file, ngrams=1):
 	# version that includes progress info
 	with open(tweet_data_file,'rU') as f:
 		n = sum(1 for _ in f) - 1
-		print ' -- %d training tweets' % n
+		print ' -- parsing %d tweets' % n
 		n /= 100 # convert it to a percent ---- can change this for diff print intervals
 		f.seek(0)
 

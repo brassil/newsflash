@@ -8,6 +8,8 @@ the WSHandler has some now-deprecated things in it
 
 add some options to the UI
 
+if you zoom out of the new york map really far, you can never find it again (could there be a min zoom and/or a reset view button)
+
 ### newsflash algorithms
 
 - improve entropic bounding box calculation: make it a little more stochastic than always splitting in the middle. We fixed part of the problem with the lat-long double-check switch but it could be better. Maybe the algo can take in a "thoroughness" level that checks a few options per iteration and chooses the best one

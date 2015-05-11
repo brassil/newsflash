@@ -173,7 +173,7 @@ def stream_stats(nf_obj):
 		client.write_message(json.dumps(link_data))
 
 
-def retreive_tweets_with_newsflash(nf_obj, source, update):
+def retreive_tweets_with_newsflash(nf_obj, source, update_interval):
 	thread = threading.current_thread()
 	count = 0
 	print 'Streaming live Twitter data'
@@ -202,7 +202,7 @@ def retreive_tweets_with_newsflash(nf_obj, source, update):
 			for client in clients:
 				client.write_message(tweet_json)
 
-			if count == update:
+			if count == update_interval:
 				sys.stdout.write('Recomputing rankings\n')
 				count = 0
 				nf.compute_rankings(nf_obj)
@@ -292,7 +292,7 @@ def retreive_tweets_with_newsflash(nf_obj, source, update):
 # 	else:
 # 		print "ERROR: invalid mode requested!"
 
-def run_newsflash(existing_tweet_corpus, lang, bounding_box, ngrams=1):
+def run_newsflash(existing_tweet_corpus, lang, bounding_box, ngrams, update_interval):
 	'''
 	Get tweets from a file and then stream the API
 
@@ -320,7 +320,7 @@ def run_newsflash(existing_tweet_corpus, lang, bounding_box, ngrams=1):
 	stream_stats(nf_obj) # push preliminary (pre-stream) rankings
 	
 	source = twitterreq((url+params), 'GET', [])
-	retreive_tweets_with_newsflash(nf_obj, source, 50)
+	retreive_tweets_with_newsflash(nf_obj, source, ngrams, update_interval)
 
 
 
@@ -395,14 +395,17 @@ if __name__ == "__main__":
 		' Newsflash collects unigrams and bigrams. Default=1 (unigrams only).')
 	parser.add_argument('-l', '--lang', required=False, default='en',
 		help='Tweet language (two-letter code). Default = en (English).')
+	parser.add_argument('-i', '--update_interval', required=False, type=int,
+		default=50, help='Number of Tweets to stream before recomputing term '
+		'ranks.')
 	location = parser.add_mutually_exclusive_group(required=True)
 	location.add_argument('-m', '--manhattan', action='store_true', 
-		help='Set Tweet bounding box to the greater Manhattan area')
+		help='Set Tweet bounding box to the greater Manhattan area.')
 	location.add_argument('-u', '--united_states', action='store_true',
-		help='Set Tweet bounding box to the coninental United States')
+		help='Set Tweet bounding box to the coninental United States.')
 	location.add_argument('-b', '--bounding_box', type=float, nargs='+',
 		help='Custom bounding box. Enter coordinates in the following order: '
-		'SW corner long, SW corner lat, NE corner long, NE corner lat')
+		'SW corner long, SW corner lat, NE corner long, NE corner lat.')
 	opts = parser.parse_args()
 
 	if not os.path.isfile(opts.tweet_file):
@@ -429,7 +432,8 @@ if __name__ == "__main__":
 		# orig: (target=stream_tweets, args=('newsflash',train_file,directory))
 		t = threading.Thread(target=run_newsflash, 
 							 args=(opts.tweet_file, opts.lang, 
-							 	opts.bounding_box, opts.ngrams_max))
+							 	opts.bounding_box, opts.ngrams_max, 
+							 	opts.update_interval))
 		threading.Thread.stop = False
 		t.start()
 		t.stop = False

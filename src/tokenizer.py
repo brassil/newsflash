@@ -1,5 +1,5 @@
 '''
-slightly modified from tokenizer.py in script_dev/1951/classification
+based off of tokenizer.py in script_dev/1951/classification
 '''
 
 from porter_stemmer import PorterStemmer
@@ -36,6 +36,7 @@ class Tokenizer:
 	def __init__(self, ngrams=1):
 		self.stemmer = PorterStemmer()
 		self.ngrams = ngrams
+		print ' -- initializing tokenizer with maximum ngram = %d' % ngrams
 
 	def tokenize(self, tweet):
 		words = set()
@@ -79,17 +80,10 @@ class Tokenizer:
 
 
 		# Generate all ngrams and add them
-		if self.ngrams>1 and len(words)>0:
+		if self.ngrams>1 and len(words)>1:
 			if self.ngrams > len(words): self.ngrams = len(words)
 			for i in range(len(ng)-self.ngrams+1):
-				try:
-					ngram = ng[i]
-				except IndexError:
-					print 'it failed'
-					print ng
-					print i
-					sys.exit()
-
+				ngram = ng[i]
 				for j in range(1,self.ngrams):
 					ngram += ' '+ng[i+j]
 					words.add(ngram)
