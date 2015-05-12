@@ -1,5 +1,5 @@
 '''
-slightly modified from tokenizer.py in script_dev/1951/classification
+based off of tokenizer.py in script_dev/1951/classification
 '''
 
 from porter_stemmer import PorterStemmer
@@ -33,10 +33,12 @@ links = ['www.', 'http://', 'https://', '.com/', '.org/', '.net/', '.co/', '.ly/
 
 
 class Tokenizer:
-	def __init__(self):
+	def __init__(self, ngrams=1):
 		self.stemmer = PorterStemmer()
+		self.ngrams = ngrams
+		print ' -- initializing tokenizer with maximum ngram = %d' % ngrams
 
-	def tokenize(self, tweet, ngrams=False):
+	def tokenize(self, tweet):
 		words = set()
 		ng = []
 
@@ -74,23 +76,17 @@ class Tokenizer:
 			
 			words.add(notrip) # ignore words that don't start with alphabet
 
-			if ngrams: ng.append(notrip)
+			if self.ngrams>1: ng.append(notrip)
 
 
-		if ngrams:
-			for i in range(len(ng)-1):
-				words.add(ng[i]+' '+ng[i+1])
-
-
-
-		'''YO THIS DOESN'T WORK BUT I STOPPED WORKING ON IT'''
-		# if ngrams:
-		# 	for i in range(len(ng)-ngrams+1):
-		# 		ngram = ng[i]
-		# 		for j in range(1,ngrams+1):
-		# 			if j <= i:
-		# 				ngram += ' '+ng[i+j]
-		# 				words.add(ngram)
+		# Generate all ngrams and add them
+		if self.ngrams>1 and len(words)>1:
+			if self.ngrams > len(words): self.ngrams = len(words)
+			for i in range(len(ng)-self.ngrams+1):
+				ngram = ng[i]
+				for j in range(1,self.ngrams):
+					ngram += ' '+ng[i+j]
+					words.add(ngram)
 
 
 		return words
