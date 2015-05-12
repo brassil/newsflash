@@ -42,7 +42,7 @@ http_method = "GET"
 
 directory = "/"
 
-train_file = 'tweets_4d.txt'
+train_file = 'us_tweets.txt'
 
 is_trained = False
 
@@ -199,7 +199,10 @@ def stream_tweets(mode='live', data_file=None, data_dir=None):
 	global is_trained
 	source = None
 	url = 'https://stream.twitter.com/1.1/statuses/filter.json'
-	add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
+	#add = '?language=en&locations=-74.12,40.63,-73.68,40.94'
+	add = '?language=en&locations=-125.0011,24.9493,-66.9326,49.5904'
+	# SW = (24.9493, -125.0011)
+	# NE = (49.5904, -66.9326)
 
 	#if the thread has been started with the LIVE mode specified
 	if (mode == 'live'):
