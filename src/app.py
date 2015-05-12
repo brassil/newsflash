@@ -144,7 +144,7 @@ def stream_stats(nf_obj):
 		client.write_message(json.dumps(link_data))
 
 
-def retreive_tweets_with_newsflash(nf_obj, source, update_interval):
+def retrieve_tweets_with_newsflash(nf_obj, source, update_interval):
 	thread = threading.current_thread()
 	count = 0
 	print 'Streaming live Twitter data'
@@ -211,7 +211,7 @@ def run_newsflash(existing_tweet_corpus, lang, bounding_box, ngrams, update_inte
 	stream_stats(nf_obj) # push preliminary (pre-stream) rankings
 	
 	source = twitterreq((url+params), 'GET', [])
-	retreive_tweets_with_newsflash(nf_obj, source, ngrams, update_interval)
+	retrieve_tweets_with_newsflash(nf_obj, source, update_interval)
 
 
 '''
@@ -229,7 +229,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		global directory
 		global nf_obj
 		global is_trained
-		print 'New connection'
+		# print 'New connection' ----- interferes with printing percent complete
 		self.write_message(json.dumps({'type' : 'files', 
 			'files' : os.listdir(directory)}))
 		clients.append(self)
@@ -266,7 +266,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def on_close(self):
 		global threads
 		clients.remove(self)
-		print 'Connection closed'
+		# print 'Connection closed'
 
 
 
@@ -284,7 +284,7 @@ if __name__ == "__main__":
 		help='Tweet language (two-letter code). Default = en (English).')
 	parser.add_argument('-i', '--update_interval', required=False, type=int,
 		default=50, help='Number of Tweets to stream before recomputing term '
-		'ranks.')
+		'ranks. Default = 50.')
 	location = parser.add_mutually_exclusive_group(required=True)
 	location.add_argument('-m', '--manhattan', action='store_true', 
 		help='Set Tweet bounding box to the greater Manhattan area.')
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 		# orig: (target=stream_tweets, args=('newsflash',train_file,directory))
 		t = threading.Thread(target=run_newsflash, 
 							 args=(opts.tweet_file, opts.lang, 
-							 	opts.bounding_box, opts.ngrams_max, 
+							 	bounding_box, opts.ngrams_max, 
 							 	opts.update_interval))
 		threading.Thread.stop = False
 		t.start()

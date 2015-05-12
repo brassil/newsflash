@@ -6,15 +6,27 @@ oooo look into what happens when a term wiht <50 gets shown o wait jk it wont. b
 
 the WSHandler has some now-deprecated things in it
 
-add some options to the UI
 
-if you zoom out of the new york map really far, you can never find it again (could there be a min zoom and/or a reset view button)
+
+### D3 / UI
+
+
+- add some options to the UI
+	+ e.g. only display terms with accel > 100%? (prob a bad idea idk)
+	+ e.g. set a metric for how strongly to weight by acceleration.
+- in the top trending terms, you should be able to click an "x" button and it gets added to the stopwords list
+	+ I like this esp because then it would sort of help with the annoying duplicate thing with like "new york", "new", and "york".
+- if you zoom out of the new york map really far, you can never find it again (could there be a min zoom and/or a reset view button)
+
+
 
 ### newsflash algorithms
 
-- improve entropic bounding box calculation: make it a little more stochastic than always splitting in the middle. We fixed part of the problem with the lat-long double-check switch but it could be better. Maybe the algo can take in a "thoroughness" level that checks a few options per iteration and chooses the best one
+- improve entropic bounding box calculation: 
+	+ make it a little more stochastic than always splitting in the middle. We fixed part of the problem with the lat-long double-check switch but it could be better. Maybe the algo can take in a "thoroughness" level that checks a few options per iteration and chooses the best one
+	+ also could normalize the box density by comparing freq of Tweets in the box containing a given term vs. the overall freq of all Tweets relating to the term (e.g. is this actually a dense grouping of tweets relating to this term, or is it just because it's in NY and it's densely populated anyways)
 - improve acceleration algo by making it like more frequency graph over time instead of a 24h strict cutoffs
-
+- maybe add a boolean somewhere (for each term) that tells you whether the term has been modified since the last Rank calculation. If it hasn't, then you don't need to recalculate it (although I guess some tweets could now be more than 24h ago so its accel would change but idk this might not have to be the case if we change how we calculate accel. )
 
 
 
@@ -45,8 +57,6 @@ if you zoom out of the new york map really far, you can never find it again (cou
 	+ it can automatically determine size by splitting until entropy doesn't change beyond a certain threshold and then the size is whatever the previous splitting was.
 
 
-# AB notes 2015-05-06 while making newsflash.py at first
-
 
 
 # maps
@@ -54,4 +64,6 @@ if you zoom out of the new york map really far, you can never find it again (cou
 [printing multiple maps](http://blog.webkid.io/multiple-maps-d3/)
 
 
+
+# cool feature
 

@@ -105,15 +105,6 @@ if not quitting, do `ps` to get pids of running processes, then `kill -9 pid`
 tbt and nj have wrong ass bounding boxes
 
 
-# ----------------
-
-
-"In breaking news, you're either first or last": Real-time discovery of latent 
-
-
-
-Terms are ranked within the model by a multifeatured vector of weights, with the strongest influence being acceleration, the instantaneous and recent rates of increase in term frequency.
-
 
 
 

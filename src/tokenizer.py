@@ -86,6 +86,7 @@ class Tokenizer:
 				ngram = ng[i]
 				for j in range(1,self.ngrams):
 					ngram += ' '+ng[i+j]
+					if ngram == 'madison squar garden': print 'msg'
 					words.add(ngram)
 
 

@@ -60,7 +60,7 @@ class Rank:
 
 
 
-def remove_old(nf):
+def remove_old(nf, days=7):
 	'''
 	Remove all tweets older than X days. It's kinda slow because
 	it needs to re-tokenize the text in order to find the tid in the
@@ -70,7 +70,7 @@ def remove_old(nf):
 	Since this function won't be called very often, it's better to optimize
 	for space bc its amortized runtime is negligible.
 	'''
-	about_a_week_ago = nf.tweets[nf.last_tweet].time - 86400*7
+	about_a_week_ago = nf.tweets[nf.last_tweet].time - 86400*days
 
 	for tid in nf.tweets:
 		if nf.tweets[tid].time < about_a_week_ago:
@@ -84,8 +84,6 @@ def remove_old(nf):
 	nf.first_tweet = min(nf.tweets, key=lambda tid: nf.tweets[tid].time)
 
 	# compute_rankings(nf) # recompute rankings now, if desired for testing
-
-
 
 
 
@@ -128,6 +126,7 @@ def parse_tweet(nf, t, from_file=False):
 		nf.urls[url.lower()].append(tid) # ignore case
 
 	nf.tweets[tid] = Tweet(seconds(t[1]), (float(t[5]), float(t[6])), t[7])
+	nf.last_tweet = tid
 
 	return tid
 
@@ -136,9 +135,6 @@ def parse_tweet(nf, t, from_file=False):
 def acceleration(tweet_times, freq, start, end, window):
 	'''
 	original function, 24h acceleration
-
-	Could plot the last X 6 or 12 hr periods?
-	tbh 24h is better because it includes a full cycle of day/night
 	'''
 	today_tweets = 0 # number of tweets w/ this term in the last 24h
 	for t in tweet_times:
@@ -173,13 +169,13 @@ def compute_rankings(nf):
 
 	for term in nf.terms:
 		tweets = nf.terms[term]
-	# for term,tweets in (nf.terms.items() if ngrams==1 else reversed(sorted(nf.terms.items(), key=lambda x: len(x[0].split()))):
+
+	# for term,tweets in (nf.terms.items() if ngrams==1 else 
+		# reversed(sorted(nf.terms.items(), key=lambda x: len(x[0].split()))):
 		# if len(term.split())>1:
 		# 	# for now only doing ngrams->unigram, not ngrams->[1,n-1]grams
 		# 	terms = term.split()
 		# 	for x in terms:
-		# 		if 
-
 
 		freq = len(tweets)
 		if freq < 50: continue # ignore terms with less than 50 tweets
