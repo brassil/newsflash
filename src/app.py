@@ -18,8 +18,6 @@ import newsflash as nf
 
 
 clients = []
-isFirst = True
-
 '''
 TWITTER
 '''
@@ -40,7 +38,6 @@ signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 http_method = "GET"
 
 is_trained = False
-
 threads = []
 
 nf_obj = None
@@ -222,9 +219,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		return True
 
 	def open(self):
-		global isFirst
 		global clients
-		global directory
 		global nf_obj
 		global is_trained
 		print 'New connection'
@@ -235,7 +230,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 			self.write_message(json.dumps({'type':'status', 'status':False }))
 	
 	def on_message(self, message):
-		global directory
 		data = json.loads(message.encode('utf-8'))
 		if (data['type'] == 'get_tweet_text'):
 			self.write_message(json.dumps({'type' : 'tweet_text',
