@@ -39,8 +39,6 @@ oauth_consumer = oauth.Consumer(key=consumer_key, secret=consumer_secret)
 signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
 http_method = "GET"
 
-directory = "/"
-
 is_trained = False
 
 threads = []
@@ -201,7 +199,7 @@ def run_newsflash(existing_tweet_corpus, lang, bounding_box, ngrams, update_inte
 	url = 'https://stream.twitter.com/1.1/statuses/filter.json'
 	params = '?language=%s&locations=%s' % (lang, bounding_box)
 
-	nf_obj = nf.train_nf(existing_tweet_corpus, ngrams)
+	nf_obj = nf.train_nf(existing_tweet_corpus, clients, ngrams)
 	nf.compute_rankings(nf_obj)
 	
 	is_trained = True
@@ -211,7 +209,7 @@ def run_newsflash(existing_tweet_corpus, lang, bounding_box, ngrams, update_inte
 	stream_stats(nf_obj) # push preliminary (pre-stream) rankings
 	
 	source = twitterreq((url+params), 'GET', [])
-	retreive_tweets_with_newsflash(nf_obj, source, ngrams, update_interval)
+	retreive_tweets_with_newsflash(nf_obj, source, update_interval)
 
 
 '''
@@ -230,8 +228,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		global nf_obj
 		global is_trained
 		print 'New connection'
-		self.write_message(json.dumps({'type' : 'files', 
-			'files' : os.listdir(directory)}))
 		clients.append(self)
 		if is_trained:
 			stream_stats(nf_obj)
@@ -241,24 +237,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 	def on_message(self, message):
 		global directory
 		data = json.loads(message.encode('utf-8'))
-		if (data['type'] == 'mode_change'):
-			for thread in threads:
-				thread.stop = True
-			args = ()
-			results = []
-			target = stream_tweets
-			if (data['details']['mode'] == 'file'):
-				console.log('FILE');
-				args=('file', data['details']['file'], directory)
-			elif (data['details']['mode'] == 'analyze'):
-				args = (data['details']['file'], directory)
-				target = analyze_file
-			t = threading.Thread(target=target, args=args)
-			threading.Thread.stop = False
-			t.stop = False
-			threads.append(t)
-			t.start()
-		elif (data['type'] == 'get_tweet_text'):
+		if (data['type'] == 'get_tweet_text'):
 			self.write_message(json.dumps({'type' : 'tweet_text',
 				'tweet_text' : nf_obj.tweets[data['tid']].text }))
 

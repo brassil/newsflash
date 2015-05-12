@@ -222,7 +222,7 @@ def get_top_x_terms(sorted_terms, x, nf):
 	return (topx, [nf.ranks[term].corners for term in topx])
 
 
-def train_nf(tweet_data_file, ngrams=1):
+def train_nf(tweet_data_file, clients, ngrams=1):
 	'''
 	initialize nf object -- later we will read from tweets
 	in real time but start by populating with a static file.
@@ -257,6 +257,9 @@ def train_nf(tweet_data_file, ngrams=1):
 			i += 1
 			if i % n == 0:
 				p += 1
+				if clients!=None:
+					for client in clients:
+						client.write_message({'type' : 'percent', 'percent' : p})
 				sys.stdout.write(' -- %d%% complete   \r' % p)
 				sys.stdout.flush()
 	
@@ -270,7 +273,7 @@ def main(tweet_data_file, ngrams=1): # pickle_file=None):
 	'''
 	Option to pickle the resulting nf object for later use
 	'''
-	nf = train_nf(tweet_data_file, ngrams) #, pickle_file)
+	nf = train_nf(tweet_data_file,None, ngrams) #, pickle_file)
 	# if pickle_file: pickle.dump(nf, file(pickle_file, 'w'))
 
 	sorted_terms = compute_rankings(nf)

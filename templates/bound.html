@@ -304,13 +304,32 @@
 				top: 0;
 				transition: top 0.5s;
 			}
+			#progress{
+				position: relative;
+				margin: auto;
+				margin-top: 20px;
+				width: 300px;
+				height: 30px;
+				border: 3px solid white;
+			}
 			
+			#percent_done{
+				position: absolute;
+				left: 0;
+				top: 0;
+				bottom: 0;
+				width: 0;
+				background-color: white;
+			}
 		</style>
 	</head>
 	<body>
 		<section id="load_hold">
 			<h1>Hold on there...</h1>
 			<h3>We're crunching numbers. Be back in a moment!</h3>
+			<div id="progress">
+				<div id="percent_done"></div>
+			</div>
 		</section>
 		<section class="popup pu_effect" id="file_select" file="None">
 			<h2>Available Files</h2>
@@ -563,6 +582,8 @@
 					}
 				}else if(data.type == 'tweet_text'){
 					$('#tweet_hover').html('<p>'+data['tweet_text']+'</p>').addClass('slide_in');
+				}else if (data.type == 'percent'){
+					$('#percent_done').css({'width' : data.percent+'%'});
 				}
 			};
 			ws.onclose = function(evt) { console.log("Connection close"); };
