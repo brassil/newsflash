@@ -94,9 +94,32 @@ To begin developing the algorithmic backbone of Newsflash, we needed to set of t
 
 <pre><code>python code/app.py -t data/tweets_nyc_apr26-30.csv -m -i 1000</code></pre>
 
-<p>Finally, navigate in your web browser to <code>localhost:5000/bound</code>. Initially, you will see a progress bar indicating that Newsflash is training its model using the provided file. This will fade upon completion, enabling interactivity; meanwhile, Newsflash will begin streaming live tweets.</p>
+<p>Finally, navigate in your web browser to <code>localhost:5000/bound</code>. Initially, you will see a progress bar indicating that Newsflash is training its model using the provided file. This will fade upon completion, enabling interactivity; meanwhile, Newsflash will begin streaming live tweets.</p> 
 
-<p>The Newsflash app is set up such that the user can specify one of two preset Tweet collection regions (greater Manhattan area; continental US) or the coordinates for a custom region. We have experimented with multiple maps and Tweet collection regions. However, current limitations on data collection and computation prevent us from being able to offer custom Tweet collection regions. We provide the file <code>tweets_nyc_apr26-30.csv</code>, which contains Twitter data from the greater Manhattan area for a period of four days, from 4/26 through 4/30; therefore, please use the bounding box flag <code>-m</code>, to live-stream tweets from the same area. For a full list of options, enter: </p>
+  </div>
+  <div class="col-md-2"></div>
+</div>
+
+
+
+<div class="row">
+  <div class="col-md-2"></div>
+	<div class="col-md-4">
+		<img class="img-responsive" src="img/interface.png" title="D3 interface" />
+	</div>
+	<div class="col-md-4">
+		<p>From the Tweet Statistics bar, you can select a trending term to display the geographic distribution of the tweets for the term as well as the calculated bounding box. Also available is the total frequency and change in frequency, or acceleration, of the term. <strong>One bug to note:</strong> After selecting a term for display, the interface will not refresh until you zoom or move the map slightly. We are working on fixing this, but were unable to do so by this deadline.</p>
+	</div>
+  <div class="col-md-2"></div>
+</div>
+
+<div class="row">&nbsp;</div>
+
+<div class="row">
+  <div class="col-md-2"></div>
+  <div class="col-md-8">
+
+<p>The Newsflash app is set up such that the user can specify one of two preset Tweet collection regions (greater Manhattan area; continental US) or the coordinates for a custom region. We have experimented with multiple maps and Tweet collection regions. However, current limitations on data collection and computation prevent us from being able to offer custom Tweet collection regions. We provide the file <code>tweets_nyc_apr26-30.csv</code>, which contains Twitter data from the greater Manhattan area for a period of four days, from 4/26 through 4/30; therefore, please use the bounding box flag <code>-m</code> in order to live-stream tweets from the same area. For a full list of options, enter: </p>
 
 <pre><code>python code/app.py -h</code></pre>
 
@@ -239,6 +262,10 @@ To begin developing the algorithmic backbone of Newsflash, we needed to set of t
 <div class="col-md-2"></div>
 </div>
 
+
+<div class="row">&nbsp;</div>
+
+
 <div class="row">
   <div class="col-md-2"></div>
   <div class="col-md-4">
@@ -249,6 +276,9 @@ To begin developing the algorithmic backbone of Newsflash, we needed to set of t
   </div>
   <div class="col-md-3"></div>
 </div>
+
+<div class="row">&nbsp;</div>
+
 
 <div class="row">
   <div class="col-md-2"></div>
