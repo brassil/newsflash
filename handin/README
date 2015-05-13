@@ -1,0 +1,14 @@
+CS1951a - Final Project
+
+NEWSFLASH 
+by Aaron Behr (abehr) and Alex Hadik (ahadik)
+
+
+Please refer to our report (html/writeup.html). Instructions for running the code are under the section "Using Newsflash".
+
+In order to run our server, the following dependencies are required:
+- Flask (http://flask.pocoo.org/)
+- Tornado (http://www.tornadoweb.org/en/stable/)
+
+Both can be installed using pip. We apologize for any compatibility issues -- this project was developed on Mac and has not been thoroughly tested on Linux.
+
