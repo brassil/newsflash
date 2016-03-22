@@ -36,23 +36,19 @@ All your work should be done in a branch that is well named. By well named, we m
 
 	git checkout -b my_new_branch
 
-The `-b` flag creates and then checksout the new branch.
+The `-b` flag creates and then checks out the new branch.
 
 While you work, commit often so that you can roll back work if you need to. Stay up to date with changes made to the original repository as you'll be required to merge in any new additions to the Newsflash repository before you can submit your code for inclusion. At any point, but _always_ before pushing your code to your remote repository, you should rebase with master.
 
 Rebasing makes sure that the changes you made can be merged into the code base of the original repository without problems, and then applies the changes from one branch ontop of the changes made in another branch. There are just a few basic steps to rebasing to incorporate new changes into your branch.
 
-1. Checkout the `master` branch of your repository
-	git checkout master
+1. Checkout the `master` branch of your repository (`git checkout master`)
 
-2. Pull any new changes from the `upstream` repository (the global Newsflash repo in this case). Assuming you didn't make any changes in your local `master` branch - you shouldn't have any problems merging in the updates from `upstream`.
-	git pull upstream master
+2. Pull any new changes from the `upstream` repository (the global Newsflash repo in this case). Assuming you didn't make any changes in your local `master` branch - you shouldn't have any problems merging in the updates from `upstream`. (`git pull upstream master`)
 
-3. Checkout your branch once again.
-	git checkout my_new_branch
+3. Checkout your branch once again. (`git checkout my_new_branch`)
 
-4. Rebase with `master`. If there are any conflicts - git will do its best to walk you through them and help you merge them.
-	git rebase master
+4. Rebase with `master`. If there are any conflicts - git will do its best to walk you through them and help you merge them. (`git rebase master`)
 
 ###Preparing your Changes
 Once you've got your work squared away and you're confident that your changes are mergable, because you've pulled new changes from `upstream` and rebased with your `master` branch, it's time to squash commits. If you've been committing early and often, you will likely have many commits in your branch that make up all the changes you made. We want to squash all those commits into a single commit to make the Pull Request process cleaner. We accomplish this with an interactive rebase.
@@ -76,8 +72,11 @@ If everything went according to plan, you'll be presented with a happy success s
 <img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/success_message.png" width=400>
 
 ###Submitting your Changes
-Once you've successfully rebased and squashed, it's finally time to push and submit your code for review! Push your code to your remote branch
+Once you've successfully rebased and squashed, it's finally time to push and submit your code for review! Push your code to your remote branch:
+
 	git push origin my_new_branch
+
+If you're pushing to a branch again - that is you've already pushed code and you're pushing some more - you might face an error indicating that the remote branch is ahead of your local. Take the time to see if changes have been made to that branch not from your local machine (perhaps editing directly on GitHub) and if necessary, circumvent this error by force pushing (`git push -f origin my_new_branch`).
 
 Now your new code is merge-ready and online, prepped for a Pull Request. Pull Requests are a formal process created by GitHub to submit your code for review by the managers of a repository, and provide them the means to merge it into the public repository should they feel the need. Create a Pull Request by visiting the original [Newsflash repository](https://github.com/brassil/newsflash). You should see a bright green button to create a new Pull Request:
 
@@ -85,7 +84,7 @@ Now your new code is merge-ready and online, prepped for a Pull Request. Pull Re
 
 Click this button to get the form to describe your pull request:
 
-<img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/open_pull_request.png" width=400>
+<img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/open_pull_request.png" width=600>
 
 Compare the `master` branch of the `brassil/newsflash` repository with the branch you've been working in, in your fork. You might need to select the "compare across forks" to see the list of available forks to choose from. Once you've determined what branch you'll be submitting a PR for, check that the "automatic merge" check runs successfully (note the green "Able to Merge" checkbox). If an automatic merge is not possible, it means you didn't pull and rebase properly. If an automatic merge is possible, fill out the title and content boxes describing your pull request. Follow the tips of [this article on writing pull requests](https://github.com/blog/1943-how-to-write-the-perfect-pull-request).
 
@@ -93,22 +92,13 @@ Compare the `master` branch of the `brassil/newsflash` repository with the branc
 
 Once you've filled out the form, select "Create pull request" to create one. One of the adminstrators of the Newsflash repository will review your code by pulling and running it. Your pull request should include any information needed to run and test your code. GitHub has great discussion tools for commenting directly on PRs. This is where repository administrators will provide feedback. If a chance is necessary, simply make your changes, rebase as before, and push to your branch once again. GitHub will automatically update the Pull Request with your new code. 
 
-<img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/pull_request_conversation.png" width=400>
+<img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/pull_request_conversation.png" width=600>
 
 In general, one Newsflash admin will review your work. Once your code has been proved functional and valuable, they'll merge it in with the `upstream master` branch - making your changes an official part of Newsflash. This merge automatically closes the Pull Request.
 
-<img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/merge.png" width=400>
+<img src="https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/merge.png" width=600>
+
+Whenever someone else's work gets merged into Master, we discussed how you must pull those upstream changes down to your local fork using `git pull upstream master` while inside the `master` branch. This is true once your work gets merged as well. Every successful pull request, including your own, effectively ships a new version of the repository. So before you get started on your next project and start agian by making a new branch, be sure to checkout `master` and pull with `git pull upstream master`.
 
 ###Celebrate!
 Hooray! You successfully contributed to Newsflash! :beers:
-
-[fork]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/fork.png
-[interactive_rebase]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/interactive_rebase.png
-[pick_and_squash]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/pick_and_squash.png
-[squashed_message]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/squashed_message.png
-[success_message]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/success_message.png
-[create_pull_request]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/create_pull_request.png
-[open_pull_request]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/open_pull_request.png
-[pull_request_body]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/pull_request_body.png
-[pull_request_conversation]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/pull_request_conversation.png
-[merge]: https://raw.githubusercontent.com/ahadik/newsflash/guidelines/info_assets/merge.png
